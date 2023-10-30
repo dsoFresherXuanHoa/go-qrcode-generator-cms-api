@@ -1,0 +1,3 @@
+scoop install main/make
+go install github.com/cosmtrek/air@latest
+go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/mysql github.com/joho/godotenv golang.org/x/crypto/bcrypt github.com/golang-jwt/jwt gopkg.in/gomail.v2 github.com/google/uuid github.com/cloudinary/cloudinary-go/v2

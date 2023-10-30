@@ -1,0 +1,10 @@
+@host = http://localhost:3000/api/v1/role
+@contentType = application/json
+
+###
+POST {{host}}/
+Content-Type: {{contentType}}
+
+{
+    "name": "Payment User"
+}

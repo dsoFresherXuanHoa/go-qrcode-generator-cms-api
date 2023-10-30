@@ -1,0 +1,15 @@
+@host = http://localhost:3000/api/v1/auth
+@contentType = application/json
+
+###
+POST {{host}}/sign-up
+Content-Type: {{contentType}}
+
+{
+    "firstName": "Le",
+    "lastName": "Xuan Hoa",
+    "gender": true,
+    "email": "training.dso.xuanhoa@gmail.com",
+    "password": "dsoFresherXuanHoa",
+    "roleId": 2
+}
