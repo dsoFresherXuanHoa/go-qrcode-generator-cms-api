@@ -5,6 +5,7 @@ import (
 	"go-qrcode-generator-cms-api/src/business"
 	"go-qrcode-generator-cms-api/src/constants"
 	"go-qrcode-generator-cms-api/src/entity"
+	"go-qrcode-generator-cms-api/src/errors"
 	"go-qrcode-generator-cms-api/src/storage"
 	"go-qrcode-generator-cms-api/src/utils"
 	"net/http"
@@ -45,6 +46,25 @@ func SignUp(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 					ctx.JSON(http.StatusOK, entity.NewStandardResponse(userUUID, http.StatusOK, "OK", "", constants.SignUpForNewUserSuccess))
 				}
 			}
+		}
+	}
+}
+
+func Activate(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		authStorage := storage.NewAuthStore(userStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		if activationCode := ctx.Query("activationCode"); activationCode == "" {
+			fmt.Println("Error while get activationCode from user request in auth transport: missing activation code from query string")
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, errors.ErrMissingActivationCodeInQueryString.Error(), constants.MissingActivationCodeInQueryString))
+		} else if err := authBusiness.Activate(ctx, activationCode); err != nil {
+			fmt.Println("Error while activate user in auth controller: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrActivateUser))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", constants.ActivateUserSuccess))
 		}
 	}
 }

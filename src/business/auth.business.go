@@ -8,6 +8,7 @@ import (
 
 type AuthStorage interface {
 	SignUp(ctx context.Context, user *entity.UserCreatable) (*string, error)
+	Activate(ctx context.Context, activationCode string) error
 }
 
 type authBusiness struct {
@@ -31,4 +32,12 @@ func (business *authBusiness) SignUp(ctx context.Context, user *entity.UserCreat
 			return userUUID, nil
 		}
 	}
+}
+
+func (business *authBusiness) Activate(ctx context.Context, activationCode string) error {
+	if err := business.authStorage.Activate(ctx, activationCode); err != nil {
+		fmt.Println("Error while active account by activation code in auth business: " + err.Error())
+		return err
+	}
+	return nil
 }

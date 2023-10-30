@@ -20,7 +20,7 @@ func (cfg routeConfig) RouteConfig(db *gorm.DB, cld *cloudinary.Cloudinary) {
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/sign-up", SignUp(db, cld))
-
+			auth.GET("/activation", Activate(db))
 		}
 
 		role := v1.Group("/role")

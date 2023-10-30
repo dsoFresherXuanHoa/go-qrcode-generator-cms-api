@@ -21,3 +21,11 @@ func (s *userStorage) CreateUser(ctx context.Context, user *entity.UserCreatable
 	}
 	return &user.UUID, nil
 }
+
+func (s *userStorage) UpdateUserActivateStatusByActivationCode(ctx context.Context, activationCode string) error {
+	if err := s.sql.db.Model(&entity.User{}).Where("activation_code = ?", activationCode).Update("activate", true).Error; err != nil {
+		fmt.Println("Error while activate user by activation code in user storage: " + err.Error())
+		return err
+	}
+	return nil
+}

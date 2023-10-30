@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"fmt"
-	"go-qrcode-generator-cms-api/src/exception"
+	"go-qrcode-generator-cms-api/src/errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -25,7 +25,7 @@ func (imageUtil) ImageFileHeader2Base64(file *multipart.FileHeader) (*string, er
 		return nil, err
 	} else if mimeType := http.DetectContentType(bytes); !slices.Contains(validImageType, mimeType) {
 		fmt.Println("Error while upload image to Cloudinary: invalid image type")
-		return nil, exception.ErrInvalidImageType
+		return nil, errors.ErrInvalidImageType
 	} else {
 		result := "data:" + mimeType + ";base64,"
 		result += base64.StdEncoding.EncodeToString(bytes)

@@ -13,3 +13,7 @@ Content-Type: {{contentType}}
     "password": "dsoFresherXuanHoa",
     "roleId": 2
 }
+
+###
+GET {{host}}/activation?activationCode=31e25c15-bfaa-4b08-a798-f01077d125cb
+Content-Type: {{contentType}}

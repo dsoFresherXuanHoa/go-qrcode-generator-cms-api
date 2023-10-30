@@ -22,3 +22,11 @@ func (s *authStorage) SignUp(ctx context.Context, user *entity.UserCreatable) (*
 		return userUUID, nil
 	}
 }
+
+func (s *authStorage) Activate(ctx context.Context, activationCode string) error {
+	if err := s.userStorage.UpdateUserActivateStatusByActivationCode(ctx, activationCode); err != nil {
+		fmt.Println("Error while activate user by activation code in auth storage: " + err.Error())
+		return err
+	}
+	return nil
+}
