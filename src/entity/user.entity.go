@@ -117,3 +117,7 @@ func (usr *UserUpdatable) Mask() {
 
 	*usr.Password = hashPassword
 }
+
+func (usr UserCreatable) Convert2Response() UserResponse {
+	return UserResponse{Model: usr.Model, UUID: usr.UUID, FirstName: *usr.FirstName, LastName: *usr.LastName, Gender: *usr.Gender, Email: *usr.Email, Password: *usr.Password, RoleId: *usr.RoleID, Activate: usr.Activate, ActivationCode: usr.ActivationCode, AvatarURL: usr.AvatarURL}
+}

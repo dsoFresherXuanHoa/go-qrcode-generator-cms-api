@@ -55,3 +55,33 @@ func (s *authStorage) ResetPassword(ctx context.Context, activationCode string, 
 	}
 	return nil
 }
+
+// TODO: Do not mask and set activate status in storage
+func (s *authStorage) GoogleSignUp(ctx context.Context, user *entity.UserCreatable) (*string, error) {
+	user.Activate = true
+	user.Mask()
+	if userUUID, err := s.userStorage.CreateUser(ctx, user); err != nil {
+		fmt.Println("Error while save user information to database (oauth sign up) in auth storage: " + err.Error())
+		return nil, err
+	} else {
+		return userUUID, nil
+	}
+}
+
+func (s *authStorage) GoogleSignIn(ctx context.Context, email string) (*entity.UserResponse, error) {
+	if usr, err := s.userStorage.FindUserByEmail(ctx, email); err != nil {
+		fmt.Println("Error while find user by email in auth storage: " + err.Error())
+		return nil, err
+	} else {
+		res := usr.Convert2Response()
+		return &res, nil
+	}
+}
+
+func (s *authStorage) VerifyEmailNotUsed(ctx context.Context, email string) bool {
+	if _, err := s.userStorage.FindUserByEmail(ctx, email); err != nil {
+		fmt.Println("Error while find user by email in auth storage: " + err.Error())
+		return true
+	}
+	return false
+}

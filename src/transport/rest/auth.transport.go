@@ -12,6 +12,7 @@ import (
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
@@ -146,6 +147,53 @@ func ResetPassword(db *gorm.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrResetPassword))
 		} else {
 			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", constants.ResetPasswordSuccess))
+		}
+	}
+}
+
+func Home(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "sign-in.html", nil)
+	}
+}
+
+func GoogleSignIn(db *gorm.DB, oauth2 *oauth2.Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// TODO: Random State to avoid CSRF attack:
+		url := oauth2.AuthCodeURL("dsoFresherXuanHoa")
+		ctx.Redirect(http.StatusTemporaryRedirect, url)
+	}
+}
+
+func GoogleSignInCallBack(db *gorm.DB, oauth2cfg *oauth2.Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		authStorage := storage.NewAuthStore(userStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		// TODO: Random State to avoid CSRF attack:
+		if state := ctx.Request.FormValue("state"); state != "dsoFresherXuanHoa" {
+			fmt.Println("Error while get state from redirect url to authentication: state cannot be empty!")
+			ctx.AbortWithStatus(http.StatusBadRequest)
+		} else if token, err := oauth2cfg.Exchange(oauth2.NoContext, ctx.Request.FormValue("code")); err != nil {
+			fmt.Println("Error while generate token to authentication: missing code or something wrong!")
+			ctx.AbortWithStatus(http.StatusBadRequest)
+		} else if res, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken); err != nil {
+			fmt.Println("Error while require user information from Google authentication service: accessToken can be damaged or interrupt!")
+			ctx.AbortWithStatus(http.StatusForbidden)
+		} else {
+			defer res.Body.Close()
+			if usr, err := utils.NewOAuthUtil().OAuthResponse2User(res); err != nil {
+				fmt.Println("Error while map OAuth response to User Creatable struct in auth transport: " + err.Error())
+				ctx.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, err.Error(), constants.ErrMapOAuthResponse2UserCreatable))
+			} else if accessToken, err := authBusiness.GoogleSignIn(ctx, usr); err != nil {
+				fmt.Println("Error while sign in or sign up using Google account in auth transport: " + err.Error())
+				ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrSignInUsingGoogle))
+			} else {
+				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"accessToken": accessToken}, http.StatusOK, constants.StatusOK, "", constants.SignInUsingGoogleSuccess))
+			}
+
 		}
 	}
 }
