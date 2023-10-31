@@ -43,3 +43,12 @@ func (s *userStorage) FindUserByEmailAndPassword(ctx context.Context, email stri
 	}
 	return &usr, nil
 }
+
+func (s *userStorage) FindDetailUserById(ctx context.Context, id uint) (*entity.UserResponse, error) {
+	var usr entity.UserResponse
+	if err := s.sql.db.Table(usr.GetTableName()).Where("id = ?", id).Preload("Role").First(&usr).Error; err != nil {
+		fmt.Println("Error while find detail user by id (hidden id) in user storage: " + err.Error())
+		return nil, err
+	}
+	return &usr, nil
+}

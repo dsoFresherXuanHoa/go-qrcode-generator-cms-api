@@ -1,5 +1,6 @@
 @host = http://localhost:3000/api/v1/auth
 @contentType = application/json
+@accessToken = {{$dotenv ACCESS_TOKEN}}
 
 ###
 POST {{host}}/sign-up
@@ -26,3 +27,8 @@ Content-Type: {{contentType}}
     "email": "dso.intern.xuanhoa@gmail.com",
     "password": "dsoFresherXuanHoa"
 }
+
+###
+GET {{host}}/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}

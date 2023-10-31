@@ -17,6 +17,7 @@ type Role struct {
 
 type RoleResponse struct {
 	gorm.Model `json:"-"`
+	Users      []User `json:"users" gorm:"foreignKey:RoleId"`
 	UUID       string `json:"uuid" gorm:"not null"`
 	Name       string `json:"name" gorm:"not null"`
 }

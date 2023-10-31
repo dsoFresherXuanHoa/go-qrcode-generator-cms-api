@@ -14,6 +14,6 @@ type Token struct {
 }
 
 type TokenPayload struct {
-	UserUUID string `json:"userUUID"`
-	RoleUUID string `json:"roleUUID"`
+	UserId uint `json:"userId"`
+	RoleId uint `json:"roleId"`
 }

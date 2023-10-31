@@ -13,6 +13,7 @@ type AuthStorage interface {
 	SignUp(ctx context.Context, user *entity.UserCreatable) (*string, error)
 	Activate(ctx context.Context, activationCode string) error
 	SignIn(ctx context.Context, user *entity.UserQueryable) (*entity.UserResponse, error)
+	Me(ctx context.Context, userId uint) (*entity.UserResponse, error)
 }
 
 type authBusiness struct {
@@ -55,7 +56,7 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 		return nil, err
 	} else {
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
-		payload := tokens.TokenPayload{UserUUID: usr.UUID, RoleUUID: "nil"}
+		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.Role.ID}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
 			fmt.Println("Error while try to generate accessToken in auth business: " + err.Error())
@@ -63,5 +64,14 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 		} else {
 			return accessToken, nil
 		}
+	}
+}
+
+func (business *authBusiness) Me(ctx context.Context, userId uint) (*entity.UserResponse, error) {
+	if usr, err := business.authStorage.Me(ctx, userId); err != nil {
+		fmt.Println("Error while find detail user by id (hidden id) in auth business: " + err.Error())
+		return nil, err
+	} else {
+		return usr, nil
 	}
 }

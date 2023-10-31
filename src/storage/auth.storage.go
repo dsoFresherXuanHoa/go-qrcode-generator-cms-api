@@ -39,3 +39,12 @@ func (s *authStorage) SignIn(ctx context.Context, user *entity.UserQueryable) (*
 		return usr, nil
 	}
 }
+
+func (s *authStorage) Me(ctx context.Context, userId uint) (*entity.UserResponse, error) {
+	if usr, err := s.userStorage.FindDetailUserById(ctx, userId); err != nil {
+		fmt.Println("Error while find detail user by id (hidden id) in auth storage: " + err.Error())
+		return nil, err
+	} else {
+		return usr, nil
+	}
+}

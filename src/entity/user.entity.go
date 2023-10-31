@@ -26,6 +26,8 @@ type User struct {
 
 type UserResponse struct {
 	gorm.Model     `json:"-"`
+	RoleId         uint   `json:"-" gorm:"column:role_id"`
+	Role           Role   `json:"role"`
 	UUID           string `json:"uuid" gorm:"not null"`
 	FirstName      string `json:"firstName" gorm:"column:first_name;not null"`
 	LastName       string `json:"lastName" gorm:"column:last_name;not null"`

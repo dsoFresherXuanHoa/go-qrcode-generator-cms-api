@@ -90,3 +90,20 @@ func SignIn(db *gorm.DB) gin.HandlerFunc {
 		}
 	}
 }
+
+func Me(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		authStorage := storage.NewAuthStore(userStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		userId := ctx.Value("userId").(uint)
+		if user, err := authBusiness.Me(ctx, userId); err != nil {
+			fmt.Println("Error while find detail user in auth transport: " + err.Error())
+			ctx.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, err.Error(), constants.ErrFindDetailUser))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardResponse(user, http.StatusOK, constants.StatusOK, "", constants.FindDetailUserSuccess))
+		}
+	}
+}
