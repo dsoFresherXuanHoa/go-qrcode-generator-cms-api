@@ -48,3 +48,34 @@ func (m mailUtil) SendActivationRequestEmail(usr entity.UserCreatable) error {
 	}
 	return nil
 }
+
+func (m mailUtil) SendResetPasswordRequestEmail(usr entity.UserCreatable) error {
+	mailSenderHost := os.Getenv("MAIL_SENDER_HOST")
+	mailSenderPort, _ := strconv.Atoi(os.Getenv("MAIL_SENDER_PORT"))
+	mailSenderHostAddress := os.Getenv("MAIL_SENDER_HOST_ADDRESS")
+	mailSenderApplicationPassword := os.Getenv("MAIL_SENDER_APPLICATION_PASSWORD")
+	baseApiUrl := os.Getenv("BASE_API_URL")
+
+	activationUrl := baseApiUrl + "/auth/reset-password?resetCode=" + usr.ActivationCode
+	body := fmt.Sprintf(`
+		Hi: %s
+		We has been received reset password request from you.
+		If you ready send this request, click to below URL to reset your password:
+		%s
+		If you not send this request, please skip this email!
+		
+		Thank for your caring!!!`, *usr.FirstName, activationUrl)
+
+	m.message = gomail.NewMessage()
+	m.message.SetHeader("From", mailSenderHostAddress)
+	m.message.SetHeader("To", *usr.Email)
+	m.message.SetHeader("Subject", "RESET PASSWORD REQUEST NOTIFICATION - GO QR CODE GENERATOR CMS SERVICE")
+	m.message.SetBody("text/plain", body)
+
+	m.dialer = gomail.NewDialer(mailSenderHost, mailSenderPort, mailSenderHostAddress, mailSenderApplicationPassword)
+	if err := m.dialer.DialAndSend(m.message); err != nil {
+		fmt.Println("Error while send reset password request email to user: " + err.Error())
+		return err
+	}
+	return nil
+}

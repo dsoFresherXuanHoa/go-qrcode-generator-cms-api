@@ -107,3 +107,45 @@ func Me(db *gorm.DB) gin.HandlerFunc {
 		}
 	}
 }
+
+func RequestResetPassword(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		if email := ctx.Query("email"); email == "" {
+			fmt.Println("Error while get email from user request in auth transport: missing email from query string")
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, errors.ErrMissingEmailInQueryString.Error(), constants.MissingEmailInQueryString))
+		} else if usr, err := userStorage.FindUserByEmail(ctx, email); err != nil {
+			fmt.Println("Error while find user by email in auth transport: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrUserNotFound))
+		} else if err := utils.NewMailUtil().SendResetPasswordRequestEmail(*usr); err != nil {
+			fmt.Println("Error while send reset password email reset to user email: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrSendResetPasswordRequestEmail))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", constants.SendResetPasswordRequestEmailSuccess))
+		}
+	}
+}
+
+func ResetPassword(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		authStorage := storage.NewAuthStore(userStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		var reqUser entity.UserUpdatable
+		if err := ctx.ShouldBind(&reqUser); err != nil {
+			fmt.Println("Error while parse user request to struct: " + err.Error())
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), constants.InvalidUserQueryRequestFormat))
+		} else if resetCode := ctx.Query("resetCode"); resetCode == "" {
+			fmt.Println("Error while get activationCode from user request in auth transport: missing activation code from query string")
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, errors.ErrMissingActivationCodeInQueryString.Error(), constants.MissingActivationCodeInQueryString))
+		} else if err := authBusiness.ResetPassword(ctx, resetCode, &reqUser); err != nil {
+			fmt.Println("Error while reset user password in auth transport: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrResetPassword))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", constants.ResetPasswordSuccess))
+		}
+	}
+}

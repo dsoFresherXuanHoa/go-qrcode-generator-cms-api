@@ -48,3 +48,10 @@ func (s *authStorage) Me(ctx context.Context, userId uint) (*entity.UserResponse
 		return usr, nil
 	}
 }
+
+func (s *authStorage) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
+	if err := s.userStorage.UpdateUserPasswordByActivationCode(ctx, activationCode, user); err != nil {
+		fmt.Println("Error while update user password in auth storage: " + err.Error())
+	}
+	return nil
+}

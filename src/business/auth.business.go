@@ -14,6 +14,7 @@ type AuthStorage interface {
 	Activate(ctx context.Context, activationCode string) error
 	SignIn(ctx context.Context, user *entity.UserQueryable) (*entity.UserResponse, error)
 	Me(ctx context.Context, userId uint) (*entity.UserResponse, error)
+	ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error
 }
 
 type authBusiness struct {
@@ -74,4 +75,18 @@ func (business *authBusiness) Me(ctx context.Context, userId uint) (*entity.User
 	} else {
 		return usr, nil
 	}
+}
+
+func (business *authBusiness) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
+	if err := user.Validate(); err != nil {
+		fmt.Println("Error while validate user request in reset password business: " + err.Error())
+		return err
+	} else {
+		user.Mask()
+		if err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
+			fmt.Println("Error while reset user password by activation code in auth business: " + err.Error())
+			return err
+		}
+	}
+	return nil
 }

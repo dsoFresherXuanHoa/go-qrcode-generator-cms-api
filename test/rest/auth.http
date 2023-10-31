@@ -16,7 +16,7 @@ Content-Type: {{contentType}}
 }
 
 ###
-GET {{host}}/activation?activationCode=31e25c15-bfaa-4b08-a798-f01077d125cb
+PATCH {{host}}/activation?activationCode=31e25c15-bfaa-4b08-a798-f01077d125cb
 Content-Type: {{contentType}}
 
 ###
@@ -32,3 +32,16 @@ Content-Type: {{contentType}}
 GET {{host}}/me
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
+
+###
+PATCH {{host}}/reset-password?resetCode=31e25c15-bfaa-4b08-a798-f01077d125cb
+Content-Type: {{contentType}}
+
+{
+    "password": "dsoFresherXuanHoa"
+}
+
+
+###
+GET {{host}}/reset-password?email=dso.intern.xuanhoa@gmail.com
+Content-Type: {{contentType}}

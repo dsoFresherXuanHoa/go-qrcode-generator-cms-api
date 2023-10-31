@@ -110,3 +110,10 @@ func (usr *UserCreatable) Mask() {
 	usr.UUID = uuid.NewString()
 	usr.ActivationCode = uuid.NewString()
 }
+
+func (usr *UserUpdatable) Mask() {
+	hashPasswordBytes, _ := bcrypt.GenerateFromPassword([]byte(*usr.Password), 5)
+	hashPassword := string(hashPasswordBytes)
+
+	*usr.Password = hashPassword
+}

@@ -52,3 +52,20 @@ func (s *userStorage) FindDetailUserById(ctx context.Context, id uint) (*entity.
 	}
 	return &usr, nil
 }
+
+func (s *userStorage) UpdateUserPasswordByActivationCode(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
+	if err := s.sql.db.Model(&entity.User{}).Where("activation_code = ?", activationCode).Update("password", *user.Password).Error; err != nil {
+		fmt.Println("Error while reset user password by activation code in user storage: " + err.Error())
+		return err
+	}
+	return nil
+}
+
+func (s *userStorage) FindUserByEmail(ctx context.Context, email string) (*entity.UserCreatable, error) {
+	var usr entity.UserCreatable
+	if err := s.sql.db.Table(usr.GetTableName()).Where("email = ?", email).Where("activate = ?", true).First(&usr).Error; err != nil {
+		fmt.Println("Error while find user by email in user storage: " + err.Error())
+		return nil, err
+	}
+	return &usr, nil
+}
