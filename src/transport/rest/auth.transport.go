@@ -61,10 +61,32 @@ func Activate(db *gorm.DB) gin.HandlerFunc {
 			fmt.Println("Error while get activationCode from user request in auth transport: missing activation code from query string")
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, errors.ErrMissingActivationCodeInQueryString.Error(), constants.MissingActivationCodeInQueryString))
 		} else if err := authBusiness.Activate(ctx, activationCode); err != nil {
-			fmt.Println("Error while activate user in auth controller: " + err.Error())
+			fmt.Println("Error while activate user in auth transport: " + err.Error())
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), constants.ErrActivateUser))
 		} else {
 			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", constants.ActivateUserSuccess))
+		}
+	}
+}
+
+func SignIn(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		userStorage := storage.NewUserStore(sqlStorage)
+		authStorage := storage.NewAuthStore(userStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		var reqUser entity.UserQueryable
+		if err := ctx.ShouldBind(&reqUser); err != nil {
+			fmt.Println("Error while parse user request to struct: " + err.Error())
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), constants.InvalidUserQueryRequestFormat))
+		} else {
+			if accessToken, err := authBusiness.SignIn(ctx, &reqUser); err != nil {
+				fmt.Println("Error while sign in in auth transport: " + err.Error())
+				ctx.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), constants.ErrSignIn))
+			} else {
+				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"accessToken": accessToken}, http.StatusOK, constants.StatusOK, "", constants.SignInSuccess))
+			}
 		}
 	}
 }

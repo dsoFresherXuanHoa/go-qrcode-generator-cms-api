@@ -30,3 +30,12 @@ func (s *authStorage) Activate(ctx context.Context, activationCode string) error
 	}
 	return nil
 }
+
+func (s *authStorage) SignIn(ctx context.Context, user *entity.UserQueryable) (*entity.UserResponse, error) {
+	if usr, err := s.userStorage.FindUserByEmailAndPassword(ctx, *user.Email, *user.Password); err != nil {
+		fmt.Println("Error while find user by email and password in auth storage: " + err.Error())
+		return nil, err
+	} else {
+		return usr, nil
+	}
+}

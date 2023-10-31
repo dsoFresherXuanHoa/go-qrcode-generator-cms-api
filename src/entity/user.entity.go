@@ -59,12 +59,19 @@ type UserUpdatable struct {
 	Activate   bool    `json:"-" gorm:"default:false"`
 }
 
+type UserQueryable struct {
+	Email    *string `json:"email" validate:"required,email" gorm:"not null"`
+	Password *string `json:"password" validate:"required,min=8" gorm:"not null"`
+}
+
 type Users []User
 
 func (User) GetTableName() string          { return "users" }
 func (Users) GetTableName() string         { return User{}.GetTableName() }
 func (UserCreatable) GetTableName() string { return User{}.GetTableName() }
 func (UserUpdatable) GetTableName() string { return User{}.GetTableName() }
+func (UserQueryable) GetTableName() string { return User{}.GetTableName() }
+func (UserResponse) GetTableName() string  { return User{}.GetTableName() }
 
 func (usr UserCreatable) Validate() error {
 	validate := validator.New()
@@ -79,6 +86,15 @@ func (usr UserUpdatable) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(&usr); err != nil {
 		fmt.Println("Error while validate user creatable: " + err.Error())
+		return err
+	}
+	return nil
+}
+
+func (usr UserQueryable) Validate() error {
+	validate := validator.New()
+	if err := validate.Struct(&usr); err != nil {
+		fmt.Println("Error while validate user queryable: " + err.Error())
 		return err
 	}
 	return nil
