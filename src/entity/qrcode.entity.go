@@ -23,6 +23,7 @@ type QRCode struct {
 	Background    string `json:"-" gorm:"default:#FFFFFF"`
 	Foreground    string `json:"-" gorm:"default:#000000"`
 	BorderWidth   int    `json:"-" gorm:"default:20"`
+	CircleShape   bool   `json:"-" gorm:"not null;default:false"`
 	Version       int    `json:"-" gorm:"default:1"`
 	ErrorLevel    int    `json:"-" gorm:"default:1"`
 	PublicURL     string `json:"-" gorm:"column:public_url;not null"`
@@ -40,6 +41,7 @@ type QRCodeResponse struct {
 	Background    string `json:"background" gorm:"default:#FFFFFF"`
 	Foreground    string `json:"foreground" gorm:"default:#000000"`
 	BorderWidth   int    `json:"borderWidth" gorm:"default:20"`
+	CircleShape   bool   `json:"circleShape" gorm:"not null;default:false"`
 	Version       int    `json:"version" gorm:"default:1"`
 	ErrorLevel    int    `json:"errorLevel" gorm:"default:1"`
 	PublicURL     string `json:"publicURL" gorm:"column:public_url;not null"`
@@ -57,6 +59,7 @@ type QRCodeCreatable struct {
 	Background    *string `json:"background" validate:"hexcolor" gorm:"default:#FFFFFF"`
 	Foreground    *string `json:"foreground" validate:"hexcolor" gorm:"default:#000000"`
 	BorderWidth   *int    `json:"borderWidth" validate:"required" gorm:"default:20"`
+	CircleShape   *bool   `json:"circleShape" gorm:"not null;default:false"`
 	Version       *int    `json:"version" validate:"gte=1,lte=40" gorm:"default:1"`
 	ErrorLevel    *int    `json:"errorLevel" validate:"gte=1,lte=4" gorm:"default:1"`
 	PublicURL     string  `json:"-" gorm:"column:public_url;not null"`
@@ -132,6 +135,7 @@ func (qrCode QRCodeCreatable) Standardized() (*[]qrcode.EncodeOption, *[]standar
 	writerConfigs := []standard.ImageOption{
 		standard.WithBorderWidth(*qrCode.BorderWidth),
 	}
+
 	if *qrCode.ErrorLevel == 1 {
 		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionLow))
 	} else if *qrCode.ErrorLevel == 2 {
@@ -140,6 +144,9 @@ func (qrCode QRCodeCreatable) Standardized() (*[]qrcode.EncodeOption, *[]standar
 		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionQuart))
 	} else {
 		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionHighest))
+	}
+	if qrCode.CircleShape != nil && *qrCode.CircleShape {
+		writerConfigs = append(writerConfigs, standard.WithCircleShape())
 	}
 	return &qrCodeConfigs, &writerConfigs
 }

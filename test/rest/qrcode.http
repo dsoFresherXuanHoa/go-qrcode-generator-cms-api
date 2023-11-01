@@ -1,6 +1,6 @@
 @host = http://localhost:3000/api/v1/qrcode
 @contentType = application/json
-@userAccessToken = {{$dotenv ACCESS_TOKEN}}
+@userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
 ###
 POST {{host}}/
@@ -13,5 +13,6 @@ Authorization: Bearer {{userAccessToken}}
     "foreground": "#000000",
     "borderWidth": 10,
     "version": 1,
-    "ErrorLevel": 1
+    "ErrorLevel": 1,
+    "circleShape": true
 }
