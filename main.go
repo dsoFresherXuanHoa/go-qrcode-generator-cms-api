@@ -22,6 +22,7 @@ func main() {
 		models := []interface{}{
 			&entity.Role{},
 			&entity.User{},
+			&entity.QRCode{},
 		}
 		db.AutoMigrate(models...)
 

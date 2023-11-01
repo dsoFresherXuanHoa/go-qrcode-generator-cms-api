@@ -12,31 +12,33 @@ import (
 
 type User struct {
 	gorm.Model     `json:"-"`
-	RoleID         uint   `json:"-"`
-	UUID           string `json:"-" gorm:"not null"`
-	FirstName      string `json:"-" gorm:"column:first_name;not null"`
-	LastName       string `json:"-" gorm:"column:last_name;not null"`
-	Gender         bool   `json:"-" gorm:"default:false"`
-	Email          string `json:"-" gorm:"unique;not null"`
-	Password       string `json:"-" gorm:"not null"`
-	Activate       bool   `json:"-" gorm:"default:false"`
-	ActivationCode string `json:"-" gorm:"column:activation_code;not null"`
-	AvatarURL      string `json:"-" gorm:"column:avatar_url;not null"`
+	QrCode         QRCodes `json:"-"`
+	RoleID         uint    `json:"-"`
+	UUID           string  `json:"-" gorm:"not null"`
+	FirstName      string  `json:"-" gorm:"column:first_name;not null"`
+	LastName       string  `json:"-" gorm:"column:last_name;not null"`
+	Gender         bool    `json:"-" gorm:"default:false"`
+	Email          string  `json:"-" gorm:"unique;not null"`
+	Password       string  `json:"-" gorm:"not null"`
+	Activate       bool    `json:"-" gorm:"default:false"`
+	ActivationCode string  `json:"-" gorm:"column:activation_code;not null"`
+	AvatarURL      string  `json:"-" gorm:"column:avatar_url;not null"`
 }
 
 type UserResponse struct {
 	gorm.Model     `json:"-"`
-	RoleId         uint   `json:"-" gorm:"column:role_id"`
-	Role           Role   `json:"role"`
-	UUID           string `json:"uuid" gorm:"not null"`
-	FirstName      string `json:"firstName" gorm:"column:first_name;not null"`
-	LastName       string `json:"lastName" gorm:"column:last_name;not null"`
-	Gender         bool   `json:"gender" gorm:"default:false"`
-	Email          string `json:"email" gorm:"unique;not null"`
-	Password       string `json:"-" gorm:"not null"`
-	Activate       bool   `json:"activate" gorm:"default:false"`
-	ActivationCode string `json:"-" gorm:"column:activation_code;not null"`
-	AvatarURL      string `json:"avatarUrl" gorm:"column:avatar_url;not null"`
+	RoleId         uint     `json:"-" gorm:"column:role_id"`
+	Role           Role     `json:"role"`
+	QRCode         []QRCode `json:"qrcode" gorm:"foreignKey:UserId"`
+	UUID           string   `json:"uuid" gorm:"not null"`
+	FirstName      string   `json:"firstName" gorm:"column:first_name;not null"`
+	LastName       string   `json:"lastName" gorm:"column:last_name;not null"`
+	Gender         bool     `json:"gender" gorm:"default:false"`
+	Email          string   `json:"email" gorm:"unique;not null"`
+	Password       string   `json:"-" gorm:"not null"`
+	Activate       bool     `json:"activate" gorm:"default:false"`
+	ActivationCode string   `json:"-" gorm:"column:activation_code;not null"`
+	AvatarURL      string   `json:"avatarUrl" gorm:"column:avatar_url;not null"`
 }
 
 // TODO: Custom error message

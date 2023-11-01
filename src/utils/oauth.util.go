@@ -28,7 +28,7 @@ func (oauthUtil) OAuthResponse2User(res *http.Response) (*entity.UserCreatable, 
 			Picture    string `json:"picture"`
 		}{}
 		json.Unmarshal(content, &resUser)
-		defaultRoleId := uint(1)
+		defaultRoleId := uint(2)
 		defaultPassword := "nil"
 		usr := entity.UserCreatable{RoleID: &defaultRoleId, FirstName: &resUser.FamilyName, LastName: &resUser.GivenName, Email: &resUser.Email, Password: &defaultPassword, AvatarURL: resUser.Picture}
 		return &usr, nil

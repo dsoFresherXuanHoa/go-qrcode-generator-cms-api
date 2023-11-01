@@ -1,6 +1,6 @@
 @host = http://localhost:3000/api/v1/auth
 @contentType = application/json
-@accessToken = {{$dotenv ACCESS_TOKEN}}
+@userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
 ###
 POST {{host}}/sign-up
@@ -31,7 +31,7 @@ Content-Type: {{contentType}}
 ###
 GET {{host}}/me
 Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{userAccessToken}}
 
 ###
 PATCH {{host}}/reset-password?resetCode=31e25c15-bfaa-4b08-a798-f01077d125cb

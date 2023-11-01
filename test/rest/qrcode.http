@@ -1,0 +1,17 @@
+@host = http://localhost:3000/api/v1/qrcode
+@contentType = application/json
+@userAccessToken = {{$dotenv ACCESS_TOKEN}}
+
+###
+POST {{host}}/
+Content-Type: {{contentType}}
+Authorization: Bearer {{userAccessToken}}
+
+{
+    "content": "Le Xuan Hoa",
+    "background": "#FFFFFF",
+    "foreground": "#000000",
+    "borderWidth": 10,
+    "version": 1,
+    "ErrorLevel": 1
+}

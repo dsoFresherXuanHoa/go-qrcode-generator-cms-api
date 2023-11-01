@@ -43,5 +43,10 @@ func (cfg routeConfig) RouteConfig(db *gorm.DB, cld *cloudinary.Cloudinary, oaut
 		{
 			role.POST("/", CreateRole(db))
 		}
+
+		qrcode := v1.Group("/qrcode")
+		{
+			qrcode.POST("/", middlewares.RequiredAuthorized(db, secretKey), CreateQRCode(db, cld))
+		}
 	}
 }
