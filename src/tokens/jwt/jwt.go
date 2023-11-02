@@ -1,11 +1,18 @@
 package jwt
 
 import (
+	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/tokens"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+)
+
+var (
+	ErrGenerateAccessToken       = errors.New("generate accessToken failure")
+	ErrValidateAccessToken       = errors.New("validate accessToken failure")
+	ErrClaimsAccessToken2Payload = errors.New("claims accessToken to payload failure")
 )
 
 type jwtProvider struct {
@@ -30,8 +37,8 @@ func (j *jwtProvider) Generate(payload tokens.TokenPayload, exp int) (*tokens.To
 		},
 	})
 	if accessToken, err := t.SignedString([]byte(j.secretKey)); err != nil {
-		fmt.Println("Error while create accessToken in jwt provider: " + err.Error())
-		return nil, err
+		fmt.Println("Error while generate accessToken: " + err.Error())
+		return nil, ErrGenerateAccessToken
 	} else {
 		return &tokens.Token{Token: accessToken, AvailableUntil: exp, CreatedAt: time.Now()}, nil
 	}
@@ -41,11 +48,11 @@ func (j *jwtProvider) Validate(token string) (*tokens.TokenPayload, error) {
 	if res, err := jwt.ParseWithClaims(token, &authClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return []byte(j.secretKey), nil
 	}); err != nil {
-		fmt.Println("Error while validate accessToken in jwt provider: " + err.Error())
-		return nil, err
+		fmt.Println("Error while validate accessToken: " + err.Error())
+		return nil, ErrValidateAccessToken
 	} else if claims, ok := res.Claims.(*authClaims); !ok {
-		fmt.Println("Error while validate authClaims struct in jwt provider: " + err.Error())
-		return nil, err
+		fmt.Println("Error while claims accessToken to payload: " + err.Error())
+		return nil, ErrClaimsAccessToken2Payload
 	} else {
 		return &claims.Payload, nil
 	}

@@ -2,10 +2,10 @@ package business
 
 import (
 	"context"
-	"fmt"
 	"go-qrcode-generator-cms-api/src/entity"
 	"go-qrcode-generator-cms-api/src/tokens"
 	"go-qrcode-generator-cms-api/src/tokens/jwt"
+	"go-qrcode-generator-cms-api/src/utils"
 	"os"
 )
 
@@ -17,7 +17,7 @@ type AuthStorage interface {
 	ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error
 	GoogleSignUp(ctx context.Context, user *entity.UserCreatable) (*string, error)
 	GoogleSignIn(ctx context.Context, email string) (*entity.UserResponse, error)
-	VerifyEmailNotUsed(ctx context.Context, email string) bool
+	VerifyEmailHasBeenUsed(ctx context.Context, email string) (bool, error)
 }
 
 type authBusiness struct {
@@ -29,41 +29,31 @@ func NewAuthBusiness(authStorage AuthStorage) *authBusiness {
 }
 
 func (business *authBusiness) SignUp(ctx context.Context, user *entity.UserCreatable) (*string, error) {
-	if err := user.Validate(); err != nil {
-		fmt.Println("Error while validate user request in sign up business: " + err.Error())
+	user.Mask()
+	if userUUID, err := business.authStorage.SignUp(ctx, user); err != nil {
+		return nil, err
+	} else if err := utils.NewMailUtil().SendActivationRequestEmail(*user.Email, user.ActivationCode); err != nil {
 		return nil, err
 	} else {
-		user.Mask()
-		if userUUID, err := business.authStorage.SignUp(ctx, user); err != nil {
-			fmt.Println("Error while save user information to database in sign up business: " + err.Error())
-			return nil, err
-		} else {
-			return userUUID, nil
-		}
+		return userUUID, nil
 	}
 }
 
 func (business *authBusiness) Activate(ctx context.Context, activationCode string) error {
 	if err := business.authStorage.Activate(ctx, activationCode); err != nil {
-		fmt.Println("Error while active account by activation code in auth business: " + err.Error())
 		return err
 	}
 	return nil
 }
 
 func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQueryable) (*tokens.Token, error) {
-	if err := user.Validate(); err != nil {
-		fmt.Println("Error while validate user request in sign sin business: " + err.Error())
-		return nil, err
-	} else if usr, err := business.authStorage.SignIn(ctx, user); err != nil {
-		fmt.Println("Error while find user by email and password: " + err.Error())
+	if usr, err := business.authStorage.SignIn(ctx, user); err != nil {
 		return nil, err
 	} else {
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
 		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.Role.ID}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
-			fmt.Println("Error while try to generate accessToken in auth business: " + err.Error())
 			return nil, err
 		} else {
 			return accessToken, nil
@@ -73,7 +63,6 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 
 func (business *authBusiness) Me(ctx context.Context, userId uint) (*entity.UserResponse, error) {
 	if usr, err := business.authStorage.Me(ctx, userId); err != nil {
-		fmt.Println("Error while find detail user by id (hidden id) in auth business: " + err.Error())
 		return nil, err
 	} else {
 		return usr, nil
@@ -81,37 +70,27 @@ func (business *authBusiness) Me(ctx context.Context, userId uint) (*entity.User
 }
 
 func (business *authBusiness) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
-	if err := user.Validate(); err != nil {
-		fmt.Println("Error while validate user request in reset password business: " + err.Error())
+	user.Mask()
+	if err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
 		return err
-	} else {
-		user.Mask()
-		if err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
-			fmt.Println("Error while reset user password by activation code in auth business: " + err.Error())
-			return err
-		}
 	}
 	return nil
 }
 
 func (business *authBusiness) GoogleSignIn(ctx context.Context, user *entity.UserCreatable) (*tokens.Token, error) {
-	// Sign up if email not used
-	if isEmailNotUsed := business.authStorage.VerifyEmailNotUsed(ctx, *user.Email); isEmailNotUsed {
+	if _, err := business.authStorage.VerifyEmailHasBeenUsed(ctx, *user.Email); err != nil {
 		if _, err := business.authStorage.GoogleSignUp(ctx, user); err != nil {
-			fmt.Println("Error while sign up using Google account in auth business: " + err.Error())
 			return nil, err
 		}
 	}
-	// Auto sign in after sign up
+
 	if usr, err := business.authStorage.GoogleSignIn(ctx, *user.Email); err != nil {
-		fmt.Println("Error while sign in using Google account in auth business: " + err.Error())
 		return nil, err
 	} else {
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
 		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.Role.ID}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
-			fmt.Println("Error while try to generate accessToken in auth business: " + err.Error())
 			return nil, err
 		} else {
 			return accessToken, nil

@@ -18,8 +18,9 @@ func NewRouteConfig(router *gin.Engine) *routeConfig {
 	return &routeConfig{router: router}
 }
 
-func (cfg routeConfig) RouteConfig(db *gorm.DB, cld *cloudinary.Cloudinary, oauth2cfg *oauth2.Config) {
+func (cfg routeConfig) Config(db *gorm.DB, cld *cloudinary.Cloudinary, oauth2cfg *oauth2.Config) {
 	secretKey := os.Getenv("JWT_ACCESS_SECRET")
+	cfg.router.MaxMultipartMemory = 8 << 20
 	v1 := cfg.router.Group("/api/v1")
 	{
 		auth := v1.Group("/auth")

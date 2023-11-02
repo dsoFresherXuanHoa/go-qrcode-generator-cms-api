@@ -2,10 +2,15 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/entity"
 	"io"
 	"net/http"
+)
+
+var (
+	ErrReadByteFromHttpResponse = errors.New("read all bytes from http response failure")
 )
 
 type oauthUtil struct{}
@@ -16,10 +21,10 @@ func NewOAuthUtil() *oauthUtil {
 
 // TODO: Do not use default gender, set gender value from Google Authentication Service
 // FIXME: Do not use default password (agent)
-func (oauthUtil) OAuthResponse2User(res *http.Response) (*entity.UserCreatable, error) {
+func (oauthUtil) Response2User(res *http.Response) (*entity.UserCreatable, error) {
 	if content, err := io.ReadAll(res.Body); err != nil {
-		fmt.Println("Error while map OAuth Response to User Creatable Struct: " + err.Error())
-		return nil, err
+		fmt.Println("Error while read all bytes from http response: " + err.Error())
+		return nil, ErrReadByteFromHttpResponse
 	} else {
 		resUser := struct {
 			Email      string `json:"email"`
