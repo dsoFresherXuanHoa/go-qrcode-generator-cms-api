@@ -16,7 +16,7 @@ Content-Type: {{contentType}}
 }
 
 ###
-PATCH {{host}}/activation?activationCode=9a5e0b5a-a334-4622-af2e-a65adb2d2482
+PATCH {{host}}/activation?activationCode=c0a3debc-f20b-4ce6-b91a-7ccf804427a2
 Content-Type: {{contentType}}
 
 ###
@@ -25,7 +25,7 @@ Content-Type: {{contentType}}
 
 {
     "email": "dso.intern.xuanhoa@gmail.com",
-    "password": "dsoInternXuanHoa"
+    "password": "dsoFresherXuanHoa"
 }
 
 ###

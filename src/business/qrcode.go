@@ -124,6 +124,9 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	if qrCode.CircleShape != nil && *qrCode.CircleShape {
 		writerConfigs = append(writerConfigs, standard.WithCircleShape())
 	}
+	if qrCode.TransparentBackground != nil && *qrCode.TransparentBackground {
+		writerConfigs = append(writerConfigs, standard.WithBgTransparent())
+	}
 
 	if version, err := business.DetectQRCodeVersion(*qrCode.Content, *qrCode.ErrorLevel); err != nil {
 		fmt.Println("Error while detect QR Code version: " + err.Error())
