@@ -11,7 +11,7 @@ import (
 
 type QRCode struct {
 	gorm.Model
-	UserID uint
+	Users *Users `gorm:"many2many:qrcodes_users;"`
 
 	UUID                  string `gorm:"not null"`
 	Content               string `gorm:"not null"`
@@ -64,7 +64,8 @@ type QRCodeCreatable struct {
 	EncodeContent         string  `form:"-" json:"-" gorm:"not null"`
 	FilePath              string  `form:"-" json:"-" gorm:"not null"`
 
-	Logo *multipart.FileHeader `form:"logo" sql:"-" gorm:"-"`
+	Halftone *multipart.FileHeader `form:"halftone" sql:"-" gorm:"-"`
+	Logo     *multipart.FileHeader `form:"logo" sql:"-" gorm:"-"`
 }
 
 type QRCodeUpdatable struct {
@@ -73,7 +74,7 @@ type QRCodeUpdatable struct {
 
 type QRCodes []QRCode
 
-func (QRCode) TableName() string          { return "qr_codes" }
+func (QRCode) TableName() string          { return "qrcodes" }
 func (QRCodes) TableName() string         { return QRCode{}.TableName() }
 func (QRCodeCreatable) TableName() string { return QRCode{}.TableName() }
 func (QRCodeUpdatable) TableName() string { return QRCode{}.TableName() }

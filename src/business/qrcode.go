@@ -19,6 +19,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
+	"github.com/redis/go-redis/v9"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 	"golang.org/x/exp/slices"
@@ -31,15 +32,22 @@ var (
 )
 
 type QRCodeStorage interface {
-	CreateQRCode(ctx context.Context, qrCode *entity.QRCodeCreatable) (*string, error)
+	CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
+}
+
+type RedisStorage interface {
+	GetQRCodeEncodeFromRedis(client *redis.Client, key string) ([]string, error)
+	GetRedisKey(qrCode *entity.QRCodeCreatable) string
+	SaveQRCode(client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
 }
 
 type qrCodeBusiness struct {
 	qrCodeStorage QRCodeStorage
+	redisStorage  RedisStorage
 }
 
-func NewQRCodeBusiness(qrCodeStorage QRCodeStorage) *qrCodeBusiness {
-	return &qrCodeBusiness{qrCodeStorage: qrCodeStorage}
+func NewQRCodeBusiness(qrCodeStorage QRCodeStorage, redisStorage RedisStorage) *qrCodeBusiness {
+	return &qrCodeBusiness{qrCodeStorage: qrCodeStorage, redisStorage: redisStorage}
 }
 
 func (business *qrCodeBusiness) DetectQRCodeType(content string) string {
@@ -102,16 +110,24 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	localStorageBasePath := os.Getenv("LOCAL_QRCODE_STORAGE_DIR")
 	localFileName := uuid.NewString() + "." + defaultLocalFileType
 	localFilePath := filepath.Join(currentDir, localStorageBasePath, localFileName)
+
 	qrCode.FilePath = localFilePath
 	qrCode.Type = business.DetectQRCodeType(qrCode.EncodeContent)
 
 	qrCodeConfigs := []qrcode.EncodeOption{
 		qrcode.WithEncodingMode(qrcode.EncModeByte),
 	}
-	writerConfigs := []standard.ImageOption{
-		standard.WithBorderWidth(*qrCode.BorderWidth),
-	}
+	writerConfigs := []standard.ImageOption{}
 
+	if qrCode.BorderWidth != nil {
+		writerConfigs = append(writerConfigs, standard.WithBorderWidth(*qrCode.BorderWidth))
+	}
+	if qrCode.Background != nil {
+		writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex(*qrCode.Background))
+	}
+	if qrCode.Foreground != nil {
+		writerConfigs = append(writerConfigs, standard.WithFgColorRGBHex(*qrCode.Foreground))
+	}
 	if *qrCode.ErrorLevel == 1 {
 		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionLow))
 	} else if *qrCode.ErrorLevel == 2 {
@@ -124,6 +140,7 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	if qrCode.CircleShape != nil && *qrCode.CircleShape {
 		writerConfigs = append(writerConfigs, standard.WithCircleShape())
 	}
+	// TODO: Transparent background not working
 	if qrCode.TransparentBackground != nil && *qrCode.TransparentBackground {
 		writerConfigs = append(writerConfigs, standard.WithBgTransparent())
 	}
@@ -140,17 +157,33 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 		if logoImage, err := business.ResizeLogoWithVersion(*qrCode); err != nil {
 			return nil, nil, err
 		} else {
+			*qrCode.Version = 5
+			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
 			writerConfigs = append(writerConfigs, standard.WithLogoImage(logoImage))
 		}
-		writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex(*qrCode.Background))
-		writerConfigs = append(writerConfigs, standard.WithFgColorRGBHex(*qrCode.Foreground))
+	} else if qrCode.Halftone != nil {
+		// TODO: Halftone not working
+		if localHalftonePath, err := utils.NewImageUtil().ImageMultipartFile2LocalStorage(qrCode.Halftone); err != nil {
+			return nil, nil, err
+		} else {
+			*qrCode.Version = 20
+			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
+			writerConfigs = append(writerConfigs, standard.WithHalftone(*localHalftonePath))
+			writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex("#000000"))
+			writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex("#ffffff"))
+		}
 	}
 	return qrCodeConfigs, writerConfigs, nil
 }
 
-func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) (*string, *string, error) {
+func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.Client, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) (*string, *string, error) {
 	qrCode.Mask()
-	if qrCodeConfigs, writerConfigs, err := business.Standardized(qrCode); err != nil {
+	key := business.redisStorage.GetRedisKey(qrCode)
+	if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(client, key); err != storage.ErrGetQRCodeFromRedis {
+		qrCodeEncode := redisResult[0]
+		publicURL := redisResult[1]
+		return &qrCodeEncode, &publicURL, nil
+	} else if qrCodeConfigs, writerConfigs, err := business.Standardized(qrCode); err != nil {
 		return nil, nil, err
 	} else if localFilePath, err := utils.NewQrCodeUtil().SaveQRCode2LocalStorage(qrCode, qrCodeConfigs, writerConfigs); err != nil {
 		return nil, nil, err
@@ -163,7 +196,7 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, cld *cloudinar
 			return localFilePath, nil, err
 		} else {
 			qrCode.PublicURL = uploadResult.URL
-			if _, err := business.qrCodeStorage.CreateQRCode(ctx, qrCode); err != nil {
+			if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, qrCode); err != nil {
 				return localFilePath, nil, err
 			}
 			return encode, &uploadResult.URL, nil

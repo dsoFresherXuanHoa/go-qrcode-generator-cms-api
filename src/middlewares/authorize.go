@@ -34,10 +34,10 @@ func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
 			fmt.Println("Error while get Bearer token from header: " + err.Error())
-			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
+			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
-			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId

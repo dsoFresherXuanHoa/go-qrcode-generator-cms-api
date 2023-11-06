@@ -13,7 +13,7 @@ import (
 type User struct {
 	gorm.Model
 	RoleID  uint
-	QrCodes QRCodes
+	QRCodes *QRCodes `gorm:"many2many:qrcodes_users;"`
 
 	UUID           string `gorm:"not null"`
 	FirstName      string `gorm:"not null"`

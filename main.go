@@ -13,6 +13,8 @@ import (
 func main() {
 	if db, err := configs.NewGormClient().Instance(); err != nil {
 		panic("Can't connect to database via GORM: " + err.Error())
+	} else if redisClient, err := configs.NewRedisCacheClient().Instance(); err != nil {
+		panic("Can't connect to Redis Server via Redis Client: " + err.Error())
 	} else if cld, err := configs.NewCloudinaryClient().Instance(); err != nil {
 		panic("Can't connect to Cloudinary via Cloudinary API: " + err.Error())
 	} else if oauth2cfg, err := configs.NewOAuthClient().Instance(); err != nil {
@@ -31,7 +33,7 @@ func main() {
 
 		router := gin.Default()
 		router.LoadHTMLGlob(viewsDir)
-		rest.NewRouteConfig(router).Config(db, cld, oauth2cfg)
+		rest.NewRouteConfig(router).Config(db, redisClient, cld, oauth2cfg)
 		router.Run(":" + port)
 	}
 }

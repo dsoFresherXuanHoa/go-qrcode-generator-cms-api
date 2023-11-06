@@ -10,6 +10,7 @@ import (
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -19,11 +20,12 @@ var (
 	CreateQrCodeSuccess        = "Create QR Code Success: Congrats."
 )
 
-func CreateQRCode(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
+func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
-		qrCodeStorage := storage.NewQrCodeStore(sqlStorage)
-		qrCodeBusiness := business.NewQRCodeBusiness(qrCodeStorage)
+		redisStorage := storage.NewRedisStore(redisClient)
+		qrCodeStorage := storage.NewQrCodeStore(sqlStorage, redisStorage)
+		qrCodeBusiness := business.NewQRCodeBusiness(qrCodeStorage, redisStorage)
 
 		var reqQrCode entity.QRCodeCreatable
 		if err := ctx.ShouldBind(&reqQrCode); err != nil {
@@ -32,7 +34,7 @@ func CreateQRCode(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 		} else {
 			userId := ctx.Value("userId").(uint)
 			reqQrCode.UserID = userId
-			if encode, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, cld, &reqQrCode); err != nil {
+			if encode, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
 				fmt.Println("Error while create QrCode: " + err.Error())
 				ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 			} else {
