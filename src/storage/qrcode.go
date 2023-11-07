@@ -23,11 +23,11 @@ func NewQrCodeStore(sql *sqlStorage, redis *redisStorage) *qrCodeStorage {
 }
 
 func (s *qrCodeStorage) CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error) {
-	if _, err := s.redis.SaveQRCode(client, qrCode); err != nil {
-		return nil, err
-	} else if err := s.sql.db.Table(entity.QRCodeCreatable{}.TableName()).Create(&qrCode).Error; err != nil {
+	if err := s.sql.db.Table(entity.QRCodeCreatable{}.TableName()).Create(&qrCode).Error; err != nil {
 		fmt.Println("Error while save qrcode into database: " + err.Error())
 		return nil, ErrSaveQRCode
+	} else if _, err := s.redis.SaveQRCode(client, qrCode); err != nil {
+		return nil, err
 	}
 	return &qrCode.UUID, nil
 }

@@ -25,31 +25,35 @@ type QRCode struct {
 	ErrorLevel            int    `json:"errorLevel" gorm:"default:2"`
 	PublicURL             string `json:"publicURL" gorm:"not null"`
 	EncodeContent         string `json:"encode" gorm:"not null"`
-	FilePath              string `json:"-" gorm:"not null"`
+	FilePath              string `json:"-"`
 }
 
 type QRCodeResponse struct {
 	gorm.Model `json:"-"`
 
-	UUID                  string `json:"uuid" gorm:"not null"`
-	Content               string `json:"content" gorm:"not null"`
-	Type                  string `json:"type" gorm:"default:text"`
-	Background            string `json:"background" gorm:"default:#FFFFFF"`
-	Foreground            string `json:"foreground" gorm:"default:#000000"`
-	BorderWidth           int    `json:"borderWidth" gorm:"default:20"`
-	CircleShape           bool   `json:"circleShape" gorm:"not null;default:false"`
-	TransparentBackground bool   `json:"transparentBackground" gorm:"not null;default:false"`
-	Version               int    `json:"version" gorm:"default:2"`
-	ErrorLevel            int    `json:"errorLevel" gorm:"default:2"`
-	PublicURL             string `json:"publicURL" gorm:"not null"`
-	EncodeContent         string `json:"encodeContent" gorm:"not null"`
-	FilePath              string `json:"-" gorm:"not null"`
+	UUID string `json:"uuid" gorm:"not null"`
+	/*
+		Content               string `json:"content" gorm:"not null"`
+	*/
+	Content               []string `json:"content[]" gorm:"not null;type:text[]"`
+	Type                  string   `json:"type" gorm:"default:text"`
+	Background            string   `json:"background" gorm:"default:#FFFFFF"`
+	Foreground            string   `json:"foreground" gorm:"default:#000000"`
+	BorderWidth           int      `json:"borderWidth" gorm:"default:20"`
+	CircleShape           bool     `json:"circleShape" gorm:"not null;default:false"`
+	TransparentBackground bool     `json:"transparentBackground" gorm:"not null;default:false"`
+	Version               int      `json:"version" gorm:"default:2"`
+	ErrorLevel            int      `json:"errorLevel" gorm:"default:2"`
+	PublicURL             string   `json:"publicURL" gorm:"not null"`
+	EncodeContent         string   `json:"encodeContent" gorm:"not null"`
+
+	FilePath string `json:"-"`
 }
 
 type QRCodeCreatable struct {
 	gorm.Model
 
-	Content               *string `form:"content" json:"content" validate:"required" gorm:"not null"`
+	Content               *string `form:"-" json:"-" validate:"required" gorm:"not null"`
 	Background            *string `form:"background" json:"background" validate:"hexcolor" gorm:"default:#FFFFFF"`
 	Foreground            *string `form:"foreground" json:"foreground" validate:"hexcolor" gorm:"default:#000000"`
 	BorderWidth           *int    `form:"borderWidth" json:"borderWidth" validate:"required" gorm:"default:20"`
@@ -62,8 +66,9 @@ type QRCodeCreatable struct {
 	Type                  string  `form:"-" json:"-" gorm:"default:text"`
 	PublicURL             string  `form:"-" json:"-" gorm:"not null"`
 	EncodeContent         string  `form:"-" json:"-" gorm:"not null"`
-	FilePath              string  `form:"-" json:"-" gorm:"not null"`
+	FilePath              string  `json:"-"`
 
+	Contents []string              `form:"content[]" json:"content[]" mysql:"-" gorm:"-"`
 	Halftone *multipart.FileHeader `form:"halftone" sql:"-" gorm:"-"`
 	Logo     *multipart.FileHeader `form:"logo" sql:"-" gorm:"-"`
 }

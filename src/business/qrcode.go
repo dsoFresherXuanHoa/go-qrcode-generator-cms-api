@@ -23,6 +23,7 @@ import (
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 	"golang.org/x/exp/slices"
+	"gorm.io/gorm"
 )
 
 var (
@@ -176,35 +177,49 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	return qrCodeConfigs, writerConfigs, nil
 }
 
-func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.Client, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) (*string, *string, error) {
-	qrCode.Mask()
-	key := business.redisStorage.GetRedisKey(qrCode)
-	if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(client, key); err != storage.ErrGetQRCodeFromRedis {
-		qrCodeEncode := redisResult[0]
-		publicURL := redisResult[1]
-		qrCode.EncodeContent = qrCodeEncode
-		qrCode.PublicURL = publicURL
-		if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, qrCode); err != nil {
-			return nil, nil, err
-		}
-		return &qrCodeEncode, &publicURL, nil
-	} else if qrCodeConfigs, writerConfigs, err := business.Standardized(qrCode); err != nil {
-		return nil, nil, err
-	} else if localFilePath, err := utils.NewQrCodeUtil().SaveQRCode2LocalStorage(qrCode, qrCodeConfigs, writerConfigs); err != nil {
-		return nil, nil, err
-	} else if encode, err := utils.NewImageUtil().Image2Base64(*localFilePath); err != nil {
-		return localFilePath, nil, err
-	} else {
-		qrCode.EncodeContent = *encode
-		cloudinaryStorage := storage.NewCloudinaryStore(cld)
-		if uploadResult, err := cloudinaryStorage.UploadSingleImage(ctx, qrCode.EncodeContent); err != nil {
-			return localFilePath, nil, err
-		} else {
-			qrCode.PublicURL = uploadResult.URL
-			if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, qrCode); err != nil {
-				return localFilePath, nil, err
+func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.Client, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) ([]string, []string, error) {
+	var qrCodesEncode []string
+	var publicUrls []string
+	totalQRCode := len(qrCode.Contents)
+	for i := 0; i < totalQRCode; i++ {
+		qrCodeClone := *qrCode
+		qrCodeClone.Content = &qrCode.Contents[i]
+		key := business.redisStorage.GetRedisKey(&qrCodeClone)
+
+		if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(client, key); err != storage.ErrGetQRCodeFromRedis {
+			qrCodeEncode := redisResult[0]
+			publicUrl := redisResult[1]
+
+			qrCodeClone.EncodeContent = qrCodeEncode
+			qrCodeClone.PublicURL = publicUrl
+			qrCodeClone.Model = gorm.Model{}
+			if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, &qrCodeClone); err != nil {
+				return nil, nil, err
+			} else {
+				qrCodesEncode = append(qrCodesEncode, qrCodeEncode)
+				publicUrls = append(publicUrls, publicUrl)
 			}
-			return encode, &uploadResult.URL, nil
+		} else if qrCodeConfigs, writerConfigs, err := business.Standardized(&qrCodeClone); err != nil {
+			return nil, nil, err
+		} else if localFilePath, err := utils.NewQrCodeUtil().SaveQRCode2LocalStorage(&qrCodeClone, qrCodeConfigs, writerConfigs); err != nil {
+			return nil, nil, err
+		} else if encode, err := utils.NewImageUtil().Image2Base64(*localFilePath); err != nil {
+			return nil, nil, err
+		} else {
+			qrCodeClone.EncodeContent = *encode
+			cloudinaryStorage := storage.NewCloudinaryStore(cld)
+			if uploadResult, err := cloudinaryStorage.UploadSingleImage(ctx, qrCodeClone.EncodeContent); err != nil {
+				return nil, nil, err
+			} else {
+				qrCodeClone.PublicURL = uploadResult.URL
+				qrCodeClone.Content = &qrCode.Contents[i]
+				if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, &qrCodeClone); err != nil {
+					return nil, nil, err
+				}
+				qrCodesEncode = append(qrCodesEncode, qrCodeClone.EncodeContent)
+				publicUrls = append(publicUrls, qrCodeClone.PublicURL)
+			}
 		}
 	}
+	return qrCodesEncode, publicUrls, nil
 }

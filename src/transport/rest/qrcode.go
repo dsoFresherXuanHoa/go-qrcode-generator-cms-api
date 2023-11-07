@@ -34,11 +34,12 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 		} else {
 			userId := ctx.Value("userId").(uint)
 			reqQrCode.UserID = userId
-			if encode, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
+			if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
 				fmt.Println("Error while create QrCode: " + err.Error())
 				ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 			} else {
-				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": encode}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
+				fmt.Println(publicURL)
+				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": nil}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
 			}
 		}
 	}
