@@ -182,6 +182,11 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.
 	if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(client, key); err != storage.ErrGetQRCodeFromRedis {
 		qrCodeEncode := redisResult[0]
 		publicURL := redisResult[1]
+		qrCode.EncodeContent = qrCodeEncode
+		qrCode.PublicURL = publicURL
+		if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, qrCode); err != nil {
+			return nil, nil, err
+		}
 		return &qrCodeEncode, &publicURL, nil
 	} else if qrCodeConfigs, writerConfigs, err := business.Standardized(qrCode); err != nil {
 		return nil, nil, err

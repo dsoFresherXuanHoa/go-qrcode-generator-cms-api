@@ -11,19 +11,19 @@ import (
 )
 
 type User struct {
-	gorm.Model
-	RoleID  uint
-	QRCodes *QRCodes `gorm:"many2many:qrcodes_users;"`
+	gorm.Model `json:"-"`
+	RoleID     uint    `json:"-"`
+	QrCodes    QRCodes `json:"-"`
 
-	UUID           string `gorm:"not null"`
-	FirstName      string `gorm:"not null"`
-	LastName       string `gorm:"not null"`
-	Gender         bool   `gorm:"default:false"`
-	Email          string `gorm:"unique;not null"`
-	Password       string `gorm:"not null"`
-	Activate       bool   `gorm:"default:false"`
-	ActivationCode string `gorm:"not null"`
-	AvatarURL      string `gorm:"not null"`
+	UUID           string `json:"uuid" gorm:"not null"`
+	FirstName      string `json:"firstName" gorm:"not null"`
+	LastName       string `json:"lastName" gorm:"not null"`
+	Gender         bool   `json:"gender" gorm:"default:false"`
+	Email          string `json:"email" gorm:"unique;not null"`
+	Password       string `json:"-" gorm:"not null"`
+	Activate       bool   `json:"activate" gorm:"default:false"`
+	ActivationCode string `json:"-" gorm:"not null"`
+	AvatarURL      string `json:"avatarURL" gorm:"not null"`
 }
 
 type UserResponse struct {

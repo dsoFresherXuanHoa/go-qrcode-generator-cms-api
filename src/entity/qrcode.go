@@ -10,22 +10,22 @@ import (
 )
 
 type QRCode struct {
-	gorm.Model
-	Users *Users `gorm:"many2many:qrcodes_users;"`
+	gorm.Model `json:"-"`
+	UserID     uint `json:"-"`
 
-	UUID                  string `gorm:"not null"`
-	Content               string `gorm:"not null"`
-	Type                  string `gorm:"default:text"`
-	Background            string `gorm:"default:#FFFFFF"`
-	Foreground            string `gorm:"default:#000000"`
-	BorderWidth           int    `gorm:"default:20"`
-	CircleShape           bool   `gorm:"not null;default:false"`
-	TransparentBackground bool   `gorm:"not null;default:false"`
-	Version               int    `gorm:"default:2"`
-	ErrorLevel            int    `gorm:"default:2"`
-	PublicURL             string `gorm:"not null"`
-	EncodeContent         string `gorm:"not null"`
-	FilePath              string `gorm:"not null"`
+	UUID                  string `json:"uuid" gorm:"not null"`
+	Content               string `json:"content" gorm:"not null"`
+	Type                  string `json:"type" gorm:"default:text"`
+	Background            string `json:"background" gorm:"default:#FFFFFF"`
+	Foreground            string `json:"foreground" gorm:"default:#000000"`
+	BorderWidth           int    `json:"borderWidth" gorm:"default:20"`
+	CircleShape           bool   `json:"circleShape" gorm:"not null;default:false"`
+	TransparentBackground bool   `json:"transparentBackground" gorm:"not null;default:false"`
+	Version               int    `json:"version" gorm:"default:2"`
+	ErrorLevel            int    `json:"errorLevel" gorm:"default:2"`
+	PublicURL             string `json:"publicURL" gorm:"not null"`
+	EncodeContent         string `json:"encode" gorm:"not null"`
+	FilePath              string `json:"-" gorm:"not null"`
 }
 
 type QRCodeResponse struct {
