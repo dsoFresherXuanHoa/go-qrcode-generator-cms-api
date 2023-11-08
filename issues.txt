@@ -1,2 +1,8 @@
-- default password when login using oauth2 framework, openid connect
-- 
+- random state in oauth to avoid csrf attack
+- default password and gender when login using oauth2 framework, openid connect
+- jwt also valid after change password
+- http status code: internal server error, no content
+- qrcode logo size limit
+- content bits 
+- transparent and halftone not working correctly
+- hard code qrcode version in case create qrcode with logo

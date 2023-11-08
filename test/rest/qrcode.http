@@ -21,3 +21,8 @@ Authorization: Bearer {{userAccessToken}}
 GET {{host}}/50e4602c-a79f-4775-b397-0c65666f4ba7
 Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}
+
+###
+GET {{host}}/?type=text&page=1&size=2
+Content-Type: {{contentType}}
+Authorization: Bearer {{userAccessToken}}

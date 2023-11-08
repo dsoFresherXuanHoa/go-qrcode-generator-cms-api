@@ -18,12 +18,15 @@ import (
 var (
 	InvalidCreateQRCodeRequest = "Invalid QR Code Incoming Request: Check Swagger For More Information."
 	QRCodeUUIDEmpty            = "Invalid QR Code Incoming Request: QRCode UUID can not be empty."
+	InvalidPaginateRequest     = "Invalid Paginate Incoming Request: paging must include page and size."
 
-	CreateQrCodeFailure    = "Cannot Create QR Code: Make Sure You Has Right Permission And Try Again."
-	GetQRCodeByUUIDFailure = "Cannot Get QR Code By UUID: Make Sure You Has Right Permission And Try Again."
+	CreateQrCodeFailure         = "Cannot Create QR Code: Make Sure You Has Right Permission And Try Again."
+	GetQRCodeByUUIDFailure      = "Cannot Get QR Code By UUID: Make Sure You Has Right Permission And Try Again."
+	GetQRCodeByConditionFailure = "Cannot Get QR Code By Condition: Make Sure You Has Right Permission And Try Again."
 
-	CreateQrCodeSuccess    = "Create QR Code Success: Congrats."
-	GetQRCodeByUUIDSuccess = "Get QR Code By UUID Success: Congrats."
+	CreateQrCodeSuccess         = "Create QR Code Success: Congrats."
+	GetQRCodeByUUIDSuccess      = "Get QR Code By UUID Success: Congrats."
+	GetQRCodeByConditionSuccess = "Get QR Code By Condition Success: Congrats."
 
 	ErrQRCodeUUIDEmpty = errors.New("get qrcode uuid from user request")
 )
@@ -66,6 +69,30 @@ func FindQRCodeByUUID(db *gorm.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), GetQRCodeByUUIDFailure))
 		} else {
 			ctx.JSON(http.StatusOK, entity.NewStandardResponse(qrCode, http.StatusOK, "OK", "", GetQRCodeByUUIDSuccess))
+		}
+	}
+}
+
+func FindQRCodeByCondition(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		sqlStorage := storage.NewSQLStore(db)
+		qrCodeStorage := storage.NewQrCodeStore(sqlStorage, nil)
+		qrCodeBusiness := business.NewQRCodeBusiness(qrCodeStorage, nil)
+
+		qrCodeType := ctx.Query("type")
+		cond := map[string]interface{}{
+			"type": qrCodeType,
+		}
+
+		var paging entity.Paginate
+		if err := ctx.ShouldBind(&paging); err != nil {
+			fmt.Println("Error while parse paging from user request: " + err.Error())
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), GetQRCodeByConditionFailure))
+		} else if qrCodes, err := qrCodeBusiness.FindQRCodeByCondition(ctx, cond, paging); err != nil {
+			fmt.Println("Error while get qrcode by condition: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), GetQRCodeByConditionFailure))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardWithPaginateResponse(qrCodes, http.StatusOK, "OK", "", GetQRCodeByConditionSuccess, paging))
 		}
 	}
 }

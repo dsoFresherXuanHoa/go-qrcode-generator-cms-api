@@ -36,6 +36,7 @@ var (
 type QRCodeStorage interface {
 	CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
 	FindQRCodeByUUID(ctx context.Context, uuid string) (*entity.QRCodeResponse, error)
+	FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, paging entity.Paginate) ([]entity.QRCodeResponse, error)
 }
 
 type RedisStorage interface {
@@ -235,5 +236,14 @@ func (business *qrCodeBusiness) FindQRCodeByUUID(ctx context.Context, qrCodeUUID
 		return nil, err
 	} else {
 		return qrCode, nil
+	}
+}
+
+func (business *qrCodeBusiness) FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+	paging.Standardized()
+	if qrCodes, err := business.qrCodeStorage.FindQRCodeByCondition(ctx, cond, paging); err != nil {
+		return nil, err
+	} else {
+		return qrCodes, nil
 	}
 }

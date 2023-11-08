@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrSaveQRCode       = errors.New("save qrcode into database failure")
-	ErrFindQRCodeByUUID = errors.New("find qrcode by uuid failure")
+	ErrSaveQRCode            = errors.New("save qrcode into database failure")
+	ErrFindQRCodeByUUID      = errors.New("find qrcode by uuid failure")
+	ErrFindQRCodeByCondition = errors.New("find qrcode by condition failure")
 )
 
 type qrCodeStorage struct {
@@ -41,4 +42,19 @@ func (s *qrCodeStorage) FindQRCodeByUUID(ctx context.Context, uuid string) (*ent
 	}
 	res := qrCode.Convert2Response()
 	return &res, nil
+}
+
+func (s *qrCodeStorage) FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+	var qrCodes entity.QRCodes
+	offset := (paging.Page - 1) * paging.Size
+	limit := paging.Size
+	if err := s.sql.db.Where(cond).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+		fmt.Println("Error while find qrcode by condition: " + err.Error())
+		return nil, ErrFindQRCodeByCondition
+	}
+	var res = make([]entity.QRCodeResponse, len(qrCodes))
+	for i, qrCode := range qrCodes {
+		res[i] = qrCode.Convert2Response()
+	}
+	return res, nil
 }
