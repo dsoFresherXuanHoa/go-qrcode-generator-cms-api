@@ -49,6 +49,7 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 		qrcode := v1.Group("/qrcode")
 		{
 			qrcode.POST("/", middlewares.RequiredAuthorized(db, secretKey), CreateQRCode(db, redisClient, cld))
+			qrcode.GET("/:uuid", middlewares.RequiredAuthorized(db, secretKey), FindQRCodeByUUID(db))
 		}
 	}
 }

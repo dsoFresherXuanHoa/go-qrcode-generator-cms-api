@@ -16,3 +16,8 @@ Authorization: Bearer {{userAccessToken}}
     "ErrorLevel": 1,
     "circleShape": true
 }
+
+###
+GET {{host}}/50e4602c-a79f-4775-b397-0c65666f4ba7
+Content-Type: {{contentType}}
+Authorization: Bearer {{userAccessToken}}

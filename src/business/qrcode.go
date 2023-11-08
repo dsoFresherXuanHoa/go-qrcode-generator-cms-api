@@ -28,12 +28,14 @@ import (
 
 var (
 	ErrReadByteFromLogoMultipartFileHeader = errors.New("read all byte from logo image multipart file header failure")
-	ErrUnsupportedLogoImageType            = errors.New("resize QRCode logo to compatibility with version failure: unsupported logo image type")
-	ErrContentTooLarge                     = errors.New("detect QRCode version failure: content length too large")
+	ErrUnsupportedLogoImageType            = errors.New("resize qrcode logo to compatibility with version failure: unsupported logo image type")
+	ErrContentTooLarge                     = errors.New("detect qrcode version failure: content length too large")
+	ErrQrCodeUUIDFormat                    = errors.New("validate qrcode uuid failure")
 )
 
 type QRCodeStorage interface {
 	CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
+	FindQRCodeByUUID(ctx context.Context, uuid string) (*entity.QRCodeResponse, error)
 }
 
 type RedisStorage interface {
@@ -183,6 +185,7 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.
 	totalQRCode := len(qrCode.Contents)
 	for i := 0; i < totalQRCode; i++ {
 		qrCodeClone := *qrCode
+		qrCodeClone.Mask()
 		qrCodeClone.Content = &qrCode.Contents[i]
 		key := business.redisStorage.GetRedisKey(&qrCodeClone)
 
@@ -222,4 +225,15 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.
 		}
 	}
 	return qrCodesEncode, publicUrls, nil
+}
+
+func (business *qrCodeBusiness) FindQRCodeByUUID(ctx context.Context, qrCodeUUID string) (*entity.QRCodeResponse, error) {
+	if _, err := uuid.Parse(qrCodeUUID); err != nil {
+		fmt.Println("Error while validate qrCodeUUID in request: " + err.Error())
+		return nil, ErrQrCodeUUIDFormat
+	} else if qrCode, err := business.qrCodeStorage.FindQRCodeByUUID(ctx, qrCodeUUID); err != nil {
+		return nil, err
+	} else {
+		return qrCode, nil
+	}
 }

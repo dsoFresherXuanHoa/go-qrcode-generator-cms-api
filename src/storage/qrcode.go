@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrSaveQRCode = errors.New("save qrcode into database failure")
+	ErrSaveQRCode       = errors.New("save qrcode into database failure")
+	ErrFindQRCodeByUUID = errors.New("find qrcode by uuid failure")
 )
 
 type qrCodeStorage struct {
@@ -30,4 +31,14 @@ func (s *qrCodeStorage) CreateQRCode(ctx context.Context, client *redis.Client, 
 		return nil, err
 	}
 	return &qrCode.UUID, nil
+}
+
+func (s *qrCodeStorage) FindQRCodeByUUID(ctx context.Context, uuid string) (*entity.QRCodeResponse, error) {
+	var qrCode entity.QRCode
+	if err := s.sql.db.Where("uuid = ?", uuid).First(&qrCode).Error; err != nil {
+		fmt.Println("Error while find qrcode by uuid: " + err.Error())
+		return nil, ErrFindQRCodeByUUID
+	}
+	res := qrCode.Convert2Response()
+	return &res, nil
 }

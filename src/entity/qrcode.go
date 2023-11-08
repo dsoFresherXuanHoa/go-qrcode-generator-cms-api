@@ -31,21 +31,18 @@ type QRCode struct {
 type QRCodeResponse struct {
 	gorm.Model `json:"-"`
 
-	UUID string `json:"uuid" gorm:"not null"`
-	/*
-		Content               string `json:"content" gorm:"not null"`
-	*/
-	Content               []string `json:"content[]" gorm:"not null;type:text[]"`
-	Type                  string   `json:"type" gorm:"default:text"`
-	Background            string   `json:"background" gorm:"default:#FFFFFF"`
-	Foreground            string   `json:"foreground" gorm:"default:#000000"`
-	BorderWidth           int      `json:"borderWidth" gorm:"default:20"`
-	CircleShape           bool     `json:"circleShape" gorm:"not null;default:false"`
-	TransparentBackground bool     `json:"transparentBackground" gorm:"not null;default:false"`
-	Version               int      `json:"version" gorm:"default:2"`
-	ErrorLevel            int      `json:"errorLevel" gorm:"default:2"`
-	PublicURL             string   `json:"publicURL" gorm:"not null"`
-	EncodeContent         string   `json:"encodeContent" gorm:"not null"`
+	UUID                  string `json:"uuid" gorm:"not null"`
+	Content               string `json:"content" gorm:"not null"`
+	Type                  string `json:"type" gorm:"default:text"`
+	Background            string `json:"background" gorm:"default:#FFFFFF"`
+	Foreground            string `json:"foreground" gorm:"default:#000000"`
+	BorderWidth           int    `json:"borderWidth" gorm:"default:20"`
+	CircleShape           bool   `json:"circleShape" gorm:"not null;default:false"`
+	TransparentBackground bool   `json:"transparentBackground" gorm:"not null;default:false"`
+	Version               int    `json:"version" gorm:"default:2"`
+	ErrorLevel            int    `json:"errorLevel" gorm:"default:2"`
+	PublicURL             string `json:"publicURL" gorm:"not null"`
+	EncodeContent         string `json:"encodeContent" gorm:"not null"`
 
 	FilePath string `json:"-"`
 }
@@ -104,4 +101,8 @@ func (qrCode QRCodeUpdatable) Validate() error {
 
 func (qrCode *QRCodeCreatable) Mask() {
 	qrCode.UUID = uuid.NewString()
+}
+
+func (qrCode QRCode) Convert2Response() QRCodeResponse {
+	return QRCodeResponse{UUID: qrCode.UUID, Content: qrCode.Content, Type: qrCode.Type, Background: qrCode.Background, Foreground: qrCode.Foreground, BorderWidth: qrCode.BorderWidth, CircleShape: qrCode.CircleShape, TransparentBackground: qrCode.TransparentBackground, Version: qrCode.Version, ErrorLevel: qrCode.ErrorLevel, PublicURL: qrCode.PublicURL, EncodeContent: qrCode.EncodeContent}
 }
