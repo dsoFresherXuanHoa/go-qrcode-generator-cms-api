@@ -41,16 +41,21 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 			}
 		}
 
-		role := v1.Group("/role")
+		roles := v1.Group("/roles")
 		{
-			role.POST("/", CreateRole(db))
+			roles.POST("/", CreateRole(db))
 		}
 
-		qrcode := v1.Group("/qrcode")
+		users := v1.Group("/users")
 		{
-			qrcode.POST("/", middlewares.RequiredAuthorized(db, secretKey), CreateQRCode(db, redisClient, cld))
-			qrcode.GET("/:uuid", middlewares.RequiredAuthorized(db, secretKey), FindQRCodeByUUID(db))
-			qrcode.GET("/", middlewares.RequiredAuthorized(db, secretKey), FindQRCodeByCondition(db))
+			users.GET("/:userId/qrcodes/", FindQRCodeByUserId(db))
+		}
+
+		qrcodes := v1.Group("/qrcodes")
+		{
+			qrcodes.POST("/", middlewares.RequiredAuthorized(db, secretKey), CreateQRCode(db, redisClient, cld))
+			qrcodes.GET("/:uuid", middlewares.RequiredAuthorized(db, secretKey), FindQRCodeByUUID(db))
+			qrcodes.GET("/", middlewares.RequiredAuthorized(db, secretKey), FindQRCodeByCondition(db))
 		}
 	}
 }

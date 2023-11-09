@@ -11,6 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/redis/go-redis/v9 v9.3.0
+	github.com/tdewolff/parse/v2 v2.7.4
 	github.com/yeqown/go-qrcode/v2 v2.2.2
 	github.com/yeqown/go-qrcode/writer/standard v1.2.2
 	golang.org/x/crypto v0.14.0

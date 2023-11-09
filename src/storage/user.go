@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/entity"
+	"strconv"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,6 +19,7 @@ var (
 	ErrFindUserById                             = errors.New("find detail user by id failure")
 	ErrUpdateUserPasswordByActivationCode       = errors.New("update user password by activation code failure")
 	ErrFindUserByEmail                          = errors.New("find user by email failure")
+	ErrFindQRCodeByUserId                       = errors.New("find qr code by userId failure")
 )
 
 type userStorage struct {
@@ -79,4 +82,24 @@ func (s *userStorage) FindUserByEmail(ctx context.Context, email string) (*entit
 		return nil, ErrFindUserByEmail
 	}
 	return &usr, nil
+}
+
+func (s *userStorage) FindQRCodeByUserId(ctx context.Context, userId uint, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+	var qrCodes entity.QRCodes
+	offset := (paging.Page - 1) * paging.Size
+	limit := paging.Size
+	startTimeUnix, _ := strconv.ParseInt(timeStat["start_time"], 10, 64)
+	endTimeUnix, _ := strconv.ParseInt(timeStat["end_time"], 10, 64)
+	startTime := time.Unix(startTimeUnix, 0)
+	endTime := time.Unix(endTimeUnix, 0)
+	fmt.Println(startTime, endTime)
+	if err := s.sql.db.Table(entity.QRCodeCreatable{}.TableName()).Where("user_id = ?", userId).Where(cond).Where("created_at > ? AND created_at < ?", startTime, endTime).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+		fmt.Println("Error while find all qrCode by userId from database: " + err.Error())
+		return nil, ErrFindQRCodeByUserId
+	}
+	var res = make([]entity.QRCodeResponse, len(qrCodes))
+	for i, qrCode := range qrCodes {
+		res[i] = qrCode.Convert2Response()
+	}
+	return res, nil
 }
