@@ -3,19 +3,6 @@
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
 ###
-POST {{host}}/sign-up
-Content-Type: {{contentType}}
-
-{
-    "firstName": "Le",
-    "lastName": "Xuan Hoa",
-    "gender": true,
-    "email": "training.dso.xuanhoa@gmail.com",
-    "password": "dsoFresherXuanHoa",
-    "roleId": 2
-}
-
-###
 PATCH {{host}}/activation?activationCode=c0a3debc-f20b-4ce6-b91a-7ccf804427a2
 Content-Type: {{contentType}}
 
@@ -34,14 +21,13 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}
 
 ###
+GET {{host}}/reset-password?email=dso.intern.xuanhoa@gmail.com
+Content-Type: {{contentType}}
+
+###
 PATCH {{host}}/reset-password?resetCode=9a5e0b5a-a334-4622-af2e-a65adb2d2482
 Content-Type: {{contentType}}
 
 {
     "password": "dsoInternXuanHoa"
 }
-
-
-###
-GET {{host}}/reset-password?email=dso.intern.xuanhoa@gmail.com
-Content-Type: {{contentType}}

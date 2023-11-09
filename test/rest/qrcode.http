@@ -12,7 +12,6 @@ Authorization: Bearer {{userAccessToken}}
     "background": "#FFFFFF",
     "foreground": "#000000",
     "borderWidth": 10,
-    "version": 1,
     "ErrorLevel": 1,
     "circleShape": true
 }
@@ -23,6 +22,6 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}
 
 ###
-GET {{host}}/?type=text&page=1&size=2
+GET {{host}}/?page=1&size=2&startTime=1699554565&endTime=1699554565
 Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}

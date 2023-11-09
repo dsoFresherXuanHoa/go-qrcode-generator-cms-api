@@ -23,10 +23,12 @@ var (
 	CreateQrCodeFailure         = "Cannot Create QR Code: Make Sure You Has Right Permission And Try Again."
 	GetQRCodeByUUIDFailure      = "Cannot Get QR Code By UUID: Make Sure You Has Right Permission And Try Again."
 	GetQRCodeByConditionFailure = "Cannot Get QR Code By Condition: Make Sure You Has Right Permission And Try Again."
+	GetAllQRCodeFailure         = "Cannot Get All QR Code: Make Sure You Has Right Permission And Try Again."
 
 	CreateQrCodeSuccess         = "Create QR Code Success: Congrats."
 	GetQRCodeByUUIDSuccess      = "Get QR Code By UUID Success: Congrats."
 	GetQRCodeByConditionSuccess = "Get QR Code By Condition Success: Congrats."
+	GetAllQRCodeSuccess         = "Get QR All Code Success: Congrats."
 
 	ErrQRCodeUUIDEmpty = errors.New("get qrcode uuid from user request")
 )
@@ -79,17 +81,30 @@ func FindQRCodeByCondition(db *gorm.DB) gin.HandlerFunc {
 		qrCodeStorage := storage.NewQrCodeStore(sqlStorage, nil)
 		qrCodeBusiness := business.NewQRCodeBusiness(qrCodeStorage, nil)
 
-		qrCodeType := ctx.Query("type")
-		cond := map[string]interface{}{
-			"type": qrCodeType,
+		cond := map[string]interface{}{}
+		timeStat := map[string]string{}
+		if qrCodeType := ctx.Query("type"); qrCodeType != "" {
+			cond["type"] = qrCodeType
+		}
+		if qrCodeVersion := ctx.Query("version"); qrCodeVersion != "" {
+			cond["version"] = qrCodeVersion
+		}
+		if qrCodeErrorLevel := ctx.Query("errorLevel"); qrCodeErrorLevel != "" {
+			cond["error_level"] = qrCodeErrorLevel
+		}
+		if startTime := ctx.Query("startTime"); startTime != "" {
+			timeStat["start_time"] = startTime
+			if endTime := ctx.Query("endTime"); endTime != "" {
+				timeStat["end_time"] = endTime
+			}
 		}
 
 		var paging entity.Paginate
 		if err := ctx.ShouldBind(&paging); err != nil {
 			fmt.Println("Error while parse paging from user request: " + err.Error())
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), GetQRCodeByConditionFailure))
-		} else if qrCodes, err := qrCodeBusiness.FindQRCodeByCondition(ctx, cond, paging); err != nil {
-			fmt.Println("Error while get qrcode by condition: " + err.Error())
+		} else if qrCodes, err := qrCodeBusiness.FindQRCodeByCondition(ctx, cond, timeStat, paging); err != nil {
+			fmt.Println("Error while find all qrcode by condition: " + err.Error())
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), GetQRCodeByConditionFailure))
 		} else {
 			ctx.JSON(http.StatusOK, entity.NewStandardWithPaginateResponse(qrCodes, http.StatusOK, "OK", "", GetQRCodeByConditionSuccess, paging))
