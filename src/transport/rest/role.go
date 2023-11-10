@@ -19,6 +19,19 @@ var (
 	CreateRoleSuccess                = "Create Role Success: Congrats."
 )
 
+// CreateRole godoc
+//
+//	@Summary		Create a role
+//	@Description	Create a role to user authorization
+//	@Tags			roles
+//	@Accept			json
+//	@Produce		json
+//	@Param			role	body		entity.RoleCreatable	true	"Role"
+//	@Success		200		{object}	entity.standardResponse
+//	@Failure		400		{object}	entity.standardResponse
+//	@Failure		404		{object}	entity.standardResponse
+//	@Failure		500		{object}	entity.standardResponse
+//	@Router			/roles [post]
 func CreateRole(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)

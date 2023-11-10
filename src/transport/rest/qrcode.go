@@ -20,10 +20,12 @@ var (
 	QRCodeUUIDEmpty            = "Invalid QR Code Incoming Request: QRCode UUID can not be empty."
 	InvalidPaginateRequest     = "Invalid Paginate Incoming Request: paging must include page and size."
 
-	CreateQrCodeFailure         = "Cannot Create QR Code: Make Sure You Has Right Permission And Try Again."
-	GetQRCodeByUUIDFailure      = "Cannot Get QR Code By UUID: Make Sure You Has Right Permission And Try Again."
-	GetQRCodeByConditionFailure = "Cannot Get QR Code By Condition: Make Sure You Has Right Permission And Try Again."
-	GetAllQRCodeFailure         = "Cannot Get All QR Code: Make Sure You Has Right Permission And Try Again."
+	CreateQrCodeFailure                = "Cannot Create QR Code: Make Sure You Has Right Permission And Try Again."
+	GetQRCodeByUUIDFailure             = "Cannot Get QR Code By UUID: Make Sure You Has Right Permission And Try Again."
+	GetQRCodeByConditionFailure        = "Cannot Get QR Code By Condition: Make Sure You Has Right Permission And Try Again."
+	GetAllQRCodeFailure                = "Cannot Get All QR Code: Make Sure You Has Right Permission And Try Again."
+	ValidateCreateQRCodeRequestFailure = "Invalid Create QRCode Incoming Request: Check Swagger For More Information."
+	QRCodeNotFound                     = "Cannot Get QR Code By UUID: QR Code Not Found."
 
 	CreateQrCodeSuccess         = "Create QR Code Success: Congrats."
 	GetQRCodeByUUIDSuccess      = "Get QR Code By UUID Success: Congrats."
@@ -33,6 +35,21 @@ var (
 	ErrQRCodeUUIDEmpty = errors.New("get qrcode uuid from user request")
 )
 
+// CreateQRCode godoc
+//
+//	@Summary		Create QRCode
+//	@Description	Create QRCode using custom configuration
+//	@Tags			qrcodes
+//	@Accept       multipart/form-data
+//	@Produce		json
+//	@Param  Authorization  header  string  required  "Bearer Token"
+//	@Param		 qrcode	formData	entity.QRCodeCreatable	true	"QRCode"
+//	@Param		 logo	formData	file	false	"Logo"
+//	@Param		 halftone	formData	file	false	"Halftone"
+//	@Success		200		{object}	entity.standardResponse
+//	@Failure		400		{object}	entity.standardResponse
+//	@Failure		500		{object}	entity.standardResponse
+//	@Router			/qrcodes [post]
 func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
@@ -43,7 +60,10 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 		var reqQrCode entity.QRCodeCreatable
 		if err := ctx.ShouldBind(&reqQrCode); err != nil {
 			fmt.Println("Error while parse user request: " + err.Error())
-			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, ErrQRCodeUUIDEmpty.Error(), QRCodeUUIDEmpty))
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), InvalidCreateQRCodeRequest))
+		} else if err := reqQrCode.Validate(); err != nil {
+			fmt.Println("Error while validate user request: " + err.Error())
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), ValidateCreateQRCodeRequestFailure))
 		} else {
 			userId := ctx.Value("userId").(uint)
 			reqQrCode.UserID = userId
@@ -57,6 +77,20 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 	}
 }
 
+// FindQRCodeByUUID godoc
+//
+//	@Summary		Find QRCode by UUID
+//	@Description	Find QRCode using UUID - full QRCode Information
+//	@Tags			qrcodes
+//	@Accept			json
+//	@Produce		json
+//	@Param  Authorization  header  string  required  "Bearer Token"
+//	@Param			qrCodeUUID	path		string	true	"QRCode UUID"
+//	@Success		200	{object}	entity.standardResponse
+//	@Failure		400	{object}	entity.standardResponse
+//	@Failure		404	{object}	entity.standardResponse
+//	@Failure		500	{object}	entity.standardResponse
+//	@Router			/qrcodes/{qrCodeUUID} [get]
 func FindQRCodeByUUID(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
@@ -66,7 +100,10 @@ func FindQRCodeByUUID(db *gorm.DB) gin.HandlerFunc {
 		if qrCodeUUID := ctx.Param("uuid"); qrCodeUUID == "" {
 			fmt.Println("Error while get qrcode uuid from user request: qrcode uuid can not be empty")
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, ErrQRCodeUUIDEmpty.Error(), QRCodeUUIDEmpty))
-		} else if qrCode, err := qrCodeBusiness.FindQRCodeByUUID(ctx, qrCodeUUID); err != nil {
+		} else if qrCode, err := qrCodeBusiness.FindQRCodeByUUID(ctx, qrCodeUUID); err == storage.ErrFindQRCodeByUUID {
+			fmt.Println("Error while get qrcode by uuid: " + err.Error())
+			ctx.JSON(http.StatusNotFound, entity.NewStandardResponse(nil, http.StatusNotFound, constants.StatusNotFound, err.Error(), QRCodeNotFound))
+		} else if err != nil {
 			fmt.Println("Error while get qrcode by uuid: " + err.Error())
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), GetQRCodeByUUIDFailure))
 		} else {
@@ -75,6 +112,25 @@ func FindQRCodeByUUID(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// FindQRCodeByCondition godoc
+//
+//	@Summary		Find QRCode by custom condition
+//	@Description	Find QRCode by custom condition
+//	@Tags			qrcodes
+//	@Accept			json
+//	@Produce		json
+//	@Param  Authorization  header  string  required  "Bearer Token"
+//	@Param			page	query		int	false	"Page"
+//	@Param			size	query		int	false	"Size"
+//	@Param			version	query		int	false	"Version"
+//	@Param			type	query		string	false	"Type"
+//	@Param			errorLevel	query		int	false	"Error Level"
+//	@Param			startTime	query		int	false	"Start Time" config:"format=rfc3339"
+//	@Param			endTime	query		int	false	"End Time" config:"format=rfc3339"
+//	@Success		200	{object}		entity.standardResponse
+//	@Failure		400	{object}	entity.standardResponse
+//	@Failure		500	{object}	entity.standardResponse
+//	@Router			/qrcodes [get]
 func FindQRCodeByCondition(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
@@ -103,7 +159,7 @@ func FindQRCodeByCondition(db *gorm.DB) gin.HandlerFunc {
 		if err := ctx.ShouldBind(&paging); err != nil {
 			fmt.Println("Error while parse paging from user request: " + err.Error())
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), GetQRCodeByConditionFailure))
-		} else if qrCodes, err := qrCodeBusiness.FindQRCodeByCondition(ctx, cond, timeStat, paging); err != nil {
+		} else if qrCodes, err := qrCodeBusiness.FindQRCodeByCondition(ctx, cond, timeStat, &paging); err != nil {
 			fmt.Println("Error while find all qrcode by condition: " + err.Error())
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), GetQRCodeByConditionFailure))
 		} else {

@@ -9,8 +9,8 @@ import (
 )
 
 type Role struct {
-	gorm.Model
-	User Users
+	gorm.Model `json:"-"`
+	User       Users `json:"-"`
 
 	UUID string `gorm:"not null"`
 	Name string `gorm:"not null"`
@@ -25,7 +25,7 @@ type RoleResponse struct {
 }
 
 type RoleCreatable struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	UUID string  `json:"-" gorm:"not null"`
 	Name *string `json:"name" validate:"required" gorm:"not null"`

@@ -84,7 +84,7 @@ func (s *userStorage) FindUserByEmail(ctx context.Context, email string) (*entit
 	return &usr, nil
 }
 
-func (s *userStorage) FindQRCodeByUserId(ctx context.Context, userId uint, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+func (s *userStorage) FindQRCodeByUserId(ctx context.Context, userUUID string, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
 	var qrCodes entity.QRCodes
 	offset := (paging.Page - 1) * paging.Size
 	limit := paging.Size
@@ -93,9 +93,14 @@ func (s *userStorage) FindQRCodeByUserId(ctx context.Context, userId uint, cond 
 	startTime := time.Unix(startTimeUnix, 0)
 	endTime := time.Unix(endTimeUnix, 0)
 	fmt.Println(startTime, endTime)
-	if err := s.sql.db.Table(entity.QRCodeCreatable{}.TableName()).Where("user_id = ?", userId).Where(cond).Where("created_at > ? AND created_at < ?", startTime, endTime).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
-		fmt.Println("Error while find all qrCode by userId from database: " + err.Error())
-		return nil, ErrFindQRCodeByUserId
+	if endTime.After(startTime) {
+		if err := s.sql.db.Where("created_at > ? AND created_at < ?", startTime, endTime).Where(cond).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+			fmt.Println("Error while find qrcode by condition with time filter: " + err.Error())
+			return nil, ErrFindQRCodeByCondition
+		}
+	} else if err := s.sql.db.Where(cond).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+		fmt.Println("Error while find qrcode by condition: " + err.Error())
+		return nil, ErrFindQRCodeByCondition
 	}
 	var res = make([]entity.QRCodeResponse, len(qrCodes))
 	for i, qrCode := range qrCodes {

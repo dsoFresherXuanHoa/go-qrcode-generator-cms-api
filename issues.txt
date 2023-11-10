@@ -7,3 +7,5 @@
 
 - default password and gender when login using oauth2 framework, openid connect
 - http status code: internal server error, no content
+
+- wrong activation code not return error

@@ -2,8 +2,9 @@
 @contentType = application/json
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
+
 ###
-PATCH {{host}}/activation?activationCode=c0a3debc-f20b-4ce6-b91a-7ccf804427a2
+PATCH {{host}}/activation?activationCode=e980b6ee-feb3-462d-b468-061956a137cf
 Content-Type: {{contentType}}
 
 ###
@@ -12,7 +13,7 @@ Content-Type: {{contentType}}
 
 {
     "email": "dso.intern.xuanhoa@gmail.com",
-    "password": "dsoFresherXuanHoa"
+    "password":"dsoFresherXuanHoa"
 }
 
 ###
@@ -25,9 +26,9 @@ GET {{host}}/reset-password?email=dso.intern.xuanhoa@gmail.com
 Content-Type: {{contentType}}
 
 ###
-PATCH {{host}}/reset-password?resetCode=9a5e0b5a-a334-4622-af2e-a65adb2d2482
+PATCH {{host}}/reset-password?resetCode=e980b6ee-feb3-462d-b468-061956a137cf
 Content-Type: {{contentType}}
 
 {
-    "password": "dsoInternXuanHoa"
+    "password": "dsoFresherXuanHoa"
 }

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/cloudinary/cloudinary-go/v2"
@@ -233,15 +234,17 @@ func (business *qrCodeBusiness) FindQRCodeByUUID(ctx context.Context, qrCodeUUID
 		fmt.Println("Error while validate qrCodeUUID in request: " + err.Error())
 		return nil, ErrQrCodeUUIDFormat
 	} else if qrCode, err := business.qrCodeStorage.FindQRCodeByUUID(ctx, qrCodeUUID); err != nil {
+		fmt.Println(reflect.TypeOf(err))
 		return nil, err
 	} else {
 		return qrCode, nil
 	}
 }
 
-func (business *qrCodeBusiness) FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+func (business *qrCodeBusiness) FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging *entity.Paginate) ([]entity.QRCodeResponse, error) {
+
 	paging.Standardized()
-	if qrCodes, err := business.qrCodeStorage.FindQRCodeByCondition(ctx, cond, timeStat, paging); err != nil {
+	if qrCodes, err := business.qrCodeStorage.FindQRCodeByCondition(ctx, cond, timeStat, *paging); err != nil {
 		return nil, err
 	} else {
 		return qrCodes, nil

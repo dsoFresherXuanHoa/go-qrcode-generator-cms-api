@@ -43,7 +43,7 @@ type UserResponse struct {
 }
 
 type UserCreatable struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	RoleID         *uint   `form:"roleId" json:"roleId" validate:"required" gorm:"not null"`
 	FirstName      *string `form:"firstName" json:"firstName" validate:"required" gorm:"not null"`
@@ -60,14 +60,14 @@ type UserCreatable struct {
 }
 
 type UserUpdatable struct {
-	gorm.Model
-	Password *string `json:"password" validate:"required,min=8" gorm:"not null"`
-	Activate bool    `json:"-" gorm:"default:false"`
+	gorm.Model `json:"-"`
+	Password   *string `json:"password" validate:"required,min=8" gorm:"not null"`
+	Activate   bool    `json:"-" gorm:"default:false"`
 }
 
 type UserQueryable struct {
-	Email    *string `json:"email" validate:"required,email" gorm:"not null"`
-	Password *string `json:"password" validate:"required,min=8" gorm:"not null"`
+	Email    string `json:"email" validate:"required,email" gorm:"not null"`
+	Password string `json:"password" validate:"required,min=8" gorm:"not null"`
 }
 
 type Users []User

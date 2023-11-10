@@ -3,6 +3,6 @@
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
 ###
-GET {{host}}/1/qrcodes/?page=1&size=2&startTime=1699381765&endTime=1699554565
+GET {{host}}/2/qrcodes/?page=1&size=5&startTime=1699429902&endTime=1699516302&version=8&errorLevel=8
 Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}

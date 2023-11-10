@@ -48,7 +48,7 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 
 		users := v1.Group("/users")
 		{
-			users.GET("/:userId/qrcodes/", FindQRCodeByUserId(db))
+			users.GET("/:userUUID/qrcodes/", FindQRCodeByUserId(db))
 		}
 
 		qrcodes := v1.Group("/qrcodes")

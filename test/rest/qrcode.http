@@ -1,4 +1,4 @@
-@host = http://localhost:3000/api/v1/qrcode
+@host = http://localhost:3000/api/v1/qrcodes
 @contentType = application/json
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
 
@@ -9,7 +9,7 @@ Authorization: Bearer {{userAccessToken}}
 
 {
     "content": "Le Xuan Hoa",
-    "background": "#FFFFFF",
+    "background": "#ffffff",
     "foreground": "#000000",
     "borderWidth": 10,
     "ErrorLevel": 1,
@@ -17,11 +17,11 @@ Authorization: Bearer {{userAccessToken}}
 }
 
 ###
-GET {{host}}/50e4602c-a79f-4775-b397-0c65666f4ba7
+GET {{host}}/3eeb07b4-007a-4c68-a15d-857fb63b916a
 Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}
 
 ###
-GET {{host}}/?page=1&size=2&startTime=1699554565&endTime=1699554565
+GET {{host}}/?page=1&size=3&startTime=1699429902&endTime=1699516302&version=3&errorLevel=2
 Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}

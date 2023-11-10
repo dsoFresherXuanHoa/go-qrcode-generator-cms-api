@@ -1,0 +1,523 @@
+basePath: /api/v1
+definitions:
+  entity.RoleCreatable:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  entity.UserQueryable:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  entity.UserUpdatable:
+    properties:
+      password:
+        minLength: 8
+        type: string
+    required:
+    - password
+    type: object
+  entity.standardResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      statusCode:
+        type: integer
+      statusText:
+        type: string
+    type: object
+  multipart.FileHeader:
+    properties:
+      filename:
+        type: string
+      header:
+        $ref: '#/definitions/textproto.MIMEHeader'
+      size:
+        type: integer
+    type: object
+  textproto.MIMEHeader:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: dso.intern.xuanhoa@gmail.com
+    name: Xuan Hoa Le
+  description: Go QRCode Generator CMS - Swagger API Discovery
+  title: Go QRCode Generator CMS - Swagger API Discovery
+  version: "1.0"
+paths:
+  /auth/activation:
+    patch:
+      consumes:
+      - application/json
+      description: Activate an account to use our service
+      parameters:
+      - description: Activation Code
+        in: query
+        name: activationCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Activate an account
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Show current user information
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Show current user information
+      tags:
+      - auth
+  /auth/reset-password:
+    get:
+      consumes:
+      - application/json
+      description: Request an activation email to activate an account
+      parameters:
+      - description: Activation Code
+        in: query
+        name: activationCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Request an activation email
+      tags:
+      - auth
+    patch:
+      consumes:
+      - application/json
+      description: Reset password of an user account using reset password email
+      parameters:
+      - description: Reset Code
+        in: query
+        name: resetCode
+        required: true
+        type: string
+      - description: Password
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserUpdatable'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Reset password of an user account
+      tags:
+      - auth
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Sign-in to a account using email and password
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserQueryable'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Sign-in to a activated account
+      tags:
+      - auth
+  /auth/sign-up:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Sign up new account using email and password
+      parameters:
+      - in: formData
+        name: email
+        required: true
+        type: string
+      - in: formData
+        name: firstName
+        required: true
+        type: string
+      - in: formData
+        name: gender
+        required: true
+        type: boolean
+      - in: formData
+        name: lastName
+        required: true
+        type: string
+      - in: formData
+        minLength: 8
+        name: password
+        required: true
+        type: string
+      - in: formData
+        name: roleId
+        required: true
+        type: integer
+      - description: Avatar
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Sign up for new user
+      tags:
+      - auth
+  /qrcodes:
+    get:
+      consumes:
+      - application/json
+      description: Find QRCode by custom condition
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Size
+        in: query
+        name: size
+        type: integer
+      - description: Version
+        in: query
+        name: version
+        type: integer
+      - description: Type
+        in: query
+        name: type
+        type: string
+      - description: Error Level
+        in: query
+        name: errorLevel
+        type: integer
+      - description: Start Time
+        in: query
+        name: startTime
+        type: integer
+      - description: End Time
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Find QRCode by custom condition
+      tags:
+      - qrcodes
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create QRCode using custom configuration
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - in: formData
+        name: background
+        type: string
+      - in: formData
+        name: borderWidth
+        type: integer
+      - in: formData
+        name: circleShape
+        type: boolean
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: content[]
+        required: true
+        type: array
+      - in: formData
+        maximum: 4
+        minimum: 1
+        name: errorLevel
+        type: integer
+      - in: formData
+        name: foreground
+        type: string
+      - in: formData
+        name: transparentBackground
+        type: boolean
+      - in: formData
+        name: '-'
+        type: integer
+      - description: Logo
+        in: formData
+        name: logo
+        type: file
+      - description: Halftone
+        in: formData
+        name: halftone
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Create QRCode
+      tags:
+      - qrcodes
+  /qrcodes/{qrCodeUUID}:
+    get:
+      consumes:
+      - application/json
+      description: Find QRCode using UUID - full QRCode Information
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: QRCode UUID
+        in: path
+        name: qrCodeUUID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Find QRCode by UUID
+      tags:
+      - qrcodes
+  /roles:
+    post:
+      consumes:
+      - application/json
+      description: Create a role to user authorization
+      parameters:
+      - description: Role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/entity.RoleCreatable'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Create a role
+      tags:
+      - roles
+  /users/{userUUID}/qrcodes:
+    get:
+      consumes:
+      - application/json
+      description: Find QRCode by user id with custom condition
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User UUID
+        in: path
+        name: userUUID
+        required: true
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Size
+        in: query
+        name: size
+        type: integer
+      - description: Version
+        in: query
+        name: version
+        type: integer
+      - description: Type
+        in: query
+        name: type
+        type: string
+      - description: Error Level
+        in: query
+        name: errorLevel
+        type: integer
+      - description: Start Time
+        in: query
+        name: startTime
+        type: integer
+      - description: End Time
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.standardResponse'
+      summary: Find QRCode by user id
+      tags:
+      - users
+swagger: "2.0"

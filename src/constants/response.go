@@ -6,4 +6,5 @@ var (
 	StatusInternalServerError = "Internal Server Error"
 	StatusOK                  = "OK"
 	StatusForbidden           = "Forbidden"
+	StatusNotFound            = "Not Found"
 )

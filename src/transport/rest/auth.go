@@ -19,6 +19,7 @@ import (
 var (
 	ErrMissingActivationCode = errors.New("missing activation code")
 	ErrMissingEmail          = errors.New("missing email")
+	ErrInvalidJWTToken       = errors.New("invalid json web token")
 
 	InvalidSignUpRequestFormat            = "Invalid Sign Up Incoming Request: Check Swagger For More Information."
 	ValidateSignUpRequestFailure          = "Invalid Sign Up Incoming Request: Check Swagger For More Information."
@@ -45,8 +46,21 @@ var (
 	ConvertOAuthResponse2UserFailure      = "Cannot Convert OAuth Response To User: Check Swagger For More Information."
 	SignInUsingGoogleFailure              = "Cannot Sign In Using Google Account: Try Again Later."
 	SignInUsingGoogleSuccess              = "Sign In Using Google Account: Congrats."
+	GetUserIdFromTokenFailure             = "Get User Id from Auth Token: Please Use Valid Auth Token"
 )
 
+// SignUp godoc
+// @Summary      Sign up for new user
+// @Description  Sign up new account using email and password
+// @Tags         auth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param		 user	formData	entity.UserCreatable	true	"User"
+// @Param		 avatar	formData	file	true	"Avatar"
+// @Success      200  {object}  entity.standardResponse
+// @Failure      400  {object}  entity.standardResponse
+// @Failure      500  {object}  entity.standardResponse
+// @Router       /auth/sign-up [post]
 func SignUp(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		cloudinaryStorage := storage.NewCloudinaryStore(cld)
@@ -77,6 +91,18 @@ func SignUp(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	}
 }
 
+// Activation godoc
+//
+//	@Summary		Activate an account
+//	@Description	Activate an account to use our service
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			activationCode		query		string		true	"Activation Code"
+//	@Success		200		{object}	entity.standardResponse
+//	@Failure		400		{object}	entity.standardResponse
+//	@Failure		500		{object}	entity.standardResponse
+//	@Router			/auth/activation [patch]
 func Activate(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
@@ -96,6 +122,18 @@ func Activate(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// SignIn godoc
+//
+//	@Summary		Sign-in to a activated account
+//	@Description	Sign-in to a account using email and password
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		entity.UserQueryable	true	"User"
+//	@Success		200		{object}	entity.standardResponse
+//	@Failure		400		{object}	entity.standardResponse
+//	@Failure		500		{object}	entity.standardResponse
+//	@Router			/auth/sign-in [post]
 func SignIn(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
@@ -107,6 +145,8 @@ func SignIn(db *gorm.DB) gin.HandlerFunc {
 		if err := ctx.ShouldBind(&reqUser); err != nil {
 			fmt.Println("Error while parse user request: " + err.Error())
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), InvalidSignInRequestFormat))
+		} else if err := reqUser.Validate(); err != nil {
+			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), InvalidSignInRequestFormat))
 		} else if accessToken, err := authBusiness.SignIn(ctx, &reqUser); err != nil {
 			fmt.Println("Error while sign in: " + err.Error())
 			ctx.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), SignInFailure))
@@ -116,22 +156,49 @@ func SignIn(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// Me godoc
+//
+//	@Summary		Show current user information
+//	@Description	Show current user information
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param  Authorization  header  string  required  "Bearer Token"
+//	@Success		200	{object}	entity.standardResponse
+//	@Failure		403	{object}	entity.standardResponse
+//	@Router			/auth/me [get]
 func Me(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
 		authStorage := storage.NewAuthStore(userStorage)
 		authBusiness := business.NewAuthBusiness(authStorage)
-		userId := ctx.Value("userId").(uint)
-		if user, err := authBusiness.Me(ctx, userId); err != nil {
-			fmt.Println("Error while get detail user information: " + err.Error())
-			ctx.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, err.Error(), GetDetailUserFailure))
-		} else {
-			ctx.JSON(http.StatusOK, entity.NewStandardResponse(user, http.StatusOK, constants.StatusOK, "", GetDetailUserSuccess))
+		userId := ctx.Value("userId")
+		if userId != nil {
+			id := userId.(uint)
+			if user, err := authBusiness.Me(ctx, id); err != nil {
+				fmt.Println("Error while get detail user information: " + err.Error())
+				ctx.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, err.Error(), GetDetailUserFailure))
+			} else {
+				ctx.JSON(http.StatusOK, entity.NewStandardResponse(user, http.StatusOK, constants.StatusOK, "", GetDetailUserSuccess))
+			}
 		}
 	}
 }
 
+// RequestResetPassword godoc
+//
+//	@Summary		Request an activation email
+//	@Description	Request an activation email to activate an account
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			activationCode	query		string	true	"Activation Code"
+//	@Success		200	{object}	entity.standardResponse
+//	@Failure		400	{object}	entity.standardResponse
+//	@Failure		500	{object}	entity.standardResponse
+//	@Router			/auth/reset-password [get]
+//
 // TODO: Do not direct use userStorage
 func RequestResetPassword(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -150,6 +217,19 @@ func RequestResetPassword(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// ResetPassword godoc
+//
+//	@Summary		Reset password of an user account
+//	@Description	Reset password of an user account using reset password email
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			resetCode	query		string	true	"Reset Code"
+//	@Param			user	body		entity.UserUpdatable	true	"Password"
+//	@Success		200		{object}	entity.standardResponse
+//	@Failure		400		{object}	entity.standardResponse
+//	@Failure		500		{object}	entity.standardResponse
+//	@Router			/auth/reset-password [patch]
 func ResetPassword(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)

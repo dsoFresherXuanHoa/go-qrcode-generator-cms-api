@@ -48,26 +48,26 @@ type QRCodeResponse struct {
 }
 
 type QRCodeCreatable struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
-	Content               *string `form:"-" json:"-" validate:"required" gorm:"not null"`
-	Background            *string `form:"background" json:"background" validate:"hexcolor" gorm:"default:#FFFFFF"`
+	Content               *string `form:"-" json:"-" gorm:"not null"`
+	Background            *string `form:"background" json:"background" validate:"hexcolor" gorm:"default:#ffffff"`
 	Foreground            *string `form:"foreground" json:"foreground" validate:"hexcolor" gorm:"default:#000000"`
-	BorderWidth           *int    `form:"borderWidth" json:"borderWidth" validate:"required" gorm:"default:20"`
+	BorderWidth           *int    `form:"borderWidth" json:"borderWidth" gorm:"default:20"`
 	CircleShape           *bool   `form:"circleShape" json:"circleShape" gorm:"not null;default:false"`
 	TransparentBackground *bool   `form:"transparentBackground" json:"transparentBackground" gorm:"not null;default:false"`
 	ErrorLevel            *int    `form:"errorLevel" json:"errorLevel" validate:"gte=1,lte=4" gorm:"default:2"`
 	Version               *int    `form:"-" json:"version" gorm:"default:2"`
-	UserID                uint    `form:"-" json:"-" validate:"required" gorm:"not null"`
+	UserID                uint    `form:"-" json:"-" gorm:"not null"`
 	UUID                  string  `form:"-" json:"-" gorm:"not null"`
 	Type                  string  `form:"-" json:"-" gorm:"default:text"`
 	PublicURL             string  `form:"-" json:"-" gorm:"not null"`
 	EncodeContent         string  `form:"-" json:"-" gorm:"not null"`
-	FilePath              string  `json:"-"`
+	FilePath              string  `form:"-" json:"-"`
 
-	Contents []string              `form:"content[]" json:"content[]" mysql:"-" gorm:"-"`
-	Halftone *multipart.FileHeader `form:"halftone" sql:"-" gorm:"-"`
+	Contents []string              `form:"content[]" json:"content[]" validate:"required" mysql:"-" gorm:"-"`
 	Logo     *multipart.FileHeader `form:"logo" sql:"-" gorm:"-"`
+	Halftone *multipart.FileHeader `form:"halftone" sql:"-" gorm:"-"`
 }
 
 type QRCodeUpdatable struct {
@@ -81,9 +81,26 @@ func (QRCodes) TableName() string         { return QRCode{}.TableName() }
 func (QRCodeCreatable) TableName() string { return QRCode{}.TableName() }
 func (QRCodeUpdatable) TableName() string { return QRCode{}.TableName() }
 
-func (qrCode QRCodeCreatable) Validate() error {
+func (qrCode *QRCodeCreatable) Validate() error {
+	defaultBackground := "#ffffff"
+	defaultForeground := "#000000"
+	defaultBorderWidth := 20
+	defaultErrorLevel := 2
+	if qrCode.Background == nil {
+		qrCode.Background = &defaultBackground
+	}
+	if qrCode.Foreground == nil {
+		qrCode.Foreground = &defaultForeground
+	}
+	if qrCode.BorderWidth == nil {
+		qrCode.BorderWidth = &defaultBorderWidth
+	}
+	if qrCode.ErrorLevel == nil {
+		qrCode.ErrorLevel = &defaultErrorLevel
+	}
+
 	validate := validator.New()
-	if err := validate.Struct(&qrCode); err != nil {
+	if err := validate.Struct(qrCode); err != nil {
 		fmt.Println("Error while validate incoming request qrcode: " + err.Error())
 		return err
 	}

@@ -8,7 +8,7 @@ import (
 var ()
 
 type UserStorage interface {
-	FindQRCodeByUserId(ctx context.Context, userId uint, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error)
+	FindQRCodeByUserId(ctx context.Context, userUUID string, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error)
 }
 
 type userBusiness struct {
@@ -19,9 +19,9 @@ func NewUserBusiness(userStorage UserStorage) *userBusiness {
 	return &userBusiness{userStorage: userStorage}
 }
 
-func (business *userBusiness) FindQRCodeByUserId(ctx context.Context, userId uint, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error) {
+func (business *userBusiness) FindQRCodeByUserId(ctx context.Context, userUUID string, cond map[string]interface{}, timeStat map[string]string, paging *entity.Paginate) ([]entity.QRCodeResponse, error) {
 	paging.Standardized()
-	if qrCodes, err := business.userStorage.FindQRCodeByUserId(ctx, userId, cond, timeStat, paging); err != nil {
+	if qrCodes, err := business.userStorage.FindQRCodeByUserId(ctx, userUUID, cond, timeStat, *paging); err != nil {
 		return nil, err
 	} else {
 		return qrCodes, nil

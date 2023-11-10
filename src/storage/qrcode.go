@@ -55,7 +55,12 @@ func (s *qrCodeStorage) FindQRCodeByCondition(ctx context.Context, cond map[stri
 	endTimeUnix, _ := strconv.ParseInt(timeStat["end_time"], 10, 64)
 	startTime := time.Unix(startTimeUnix, 0)
 	endTime := time.Unix(endTimeUnix, 0)
-	if err := s.sql.db.Where(cond).Where("created_at > ? AND created_at < ?", startTime, endTime).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+	if endTime.After(startTime) {
+		if err := s.sql.db.Where("created_at > ? AND created_at < ?", startTime, endTime).Where(cond).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
+			fmt.Println("Error while find qrcode by condition with time filter: " + err.Error())
+			return nil, ErrFindQRCodeByCondition
+		}
+	} else if err := s.sql.db.Where(cond).Offset(offset).Limit(limit).Find(&qrCodes).Error; err != nil {
 		fmt.Println("Error while find qrcode by condition: " + err.Error())
 		return nil, ErrFindQRCodeByCondition
 	}

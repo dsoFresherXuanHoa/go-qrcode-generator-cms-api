@@ -71,6 +71,11 @@ func (s *redisStorage) GetRedisKey(qrCode *entity.QRCodeCreatable) string {
 	} else {
 		result += "2"
 	}
+	if qrCode.Logo != nil {
+		logoSize := qrCode.Logo.Size
+		result += qrCode.Logo.Filename
+		result += strconv.Itoa(int(logoSize))
+	}
 	return result
 }
 
