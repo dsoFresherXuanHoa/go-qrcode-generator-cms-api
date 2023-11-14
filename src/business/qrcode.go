@@ -150,20 +150,22 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 		writerConfigs = append(writerConfigs, standard.WithBgTransparent())
 	}
 
-	if version, err := business.DetectQRCodeVersion(*qrCode.Content, *qrCode.ErrorLevel); err != nil {
-		fmt.Println("Error while detect QR Code version: " + err.Error())
-		return nil, nil, ErrContentTooLarge
-	} else {
-		qrCodeVersion := *version + 1
-		qrCode.Version = &qrCodeVersion
-		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(qrCodeVersion))
-	}
+	/*
+		if version, err := business.DetectQRCodeVersion(*qrCode.Content, *qrCode.ErrorLevel); err != nil {
+			fmt.Println("Error while detect QR Code version: " + err.Error())
+			return nil, nil, ErrContentTooLarge
+		} else {
+			qrCodeVersion := *version + 1
+			qrCode.Version = &qrCodeVersion
+			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(qrCodeVersion))
+		}
+	*/
 	if qrCode.Logo != nil {
 		if logoImage, err := business.ResizeLogoWithVersion(*qrCode); err != nil {
 			return nil, nil, err
 		} else {
-			*qrCode.Version = 5
-			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
+			// *qrCode.Version = 5
+			// qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
 			writerConfigs = append(writerConfigs, standard.WithLogoImage(logoImage))
 		}
 	} else if qrCode.Halftone != nil {
@@ -171,8 +173,10 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 		if localHalftonePath, err := utils.NewImageUtil().ImageMultipartFile2LocalStorage(qrCode.Halftone); err != nil {
 			return nil, nil, err
 		} else {
-			*qrCode.Version = 20
-			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
+			/*
+				*qrCode.Version = 20
+				qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
+			*/
 			writerConfigs = append(writerConfigs, standard.WithHalftone(*localHalftonePath))
 			writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex("#000000"))
 			writerConfigs = append(writerConfigs, standard.WithBgColorRGBHex("#ffffff"))

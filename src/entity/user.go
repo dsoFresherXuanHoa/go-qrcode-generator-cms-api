@@ -28,7 +28,7 @@ type User struct {
 
 type UserResponse struct {
 	gorm.Model `json:"-"`
-	RoleId     uint `json:"-"`
+	RoleId     uint `json:"roleId"`
 	Role       Role `json:"role"`
 
 	UUID           string `json:"uuid" gorm:"not null"`

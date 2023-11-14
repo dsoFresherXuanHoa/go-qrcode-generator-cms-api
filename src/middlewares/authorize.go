@@ -17,6 +17,10 @@ var (
 	ErrMissingToken       = errors.New("missing token from header")
 	ErrMissingBearerToken = errors.New("missing bearer token from header")
 	ErrInvalidAccessToken = errors.New("invalid access token")
+	ErrPermissionDenied   = errors.New("permission denied")
+
+	AdministratorPermission = 1
+	UserPermission          = 2
 )
 
 func GetTokenFromHeader(c *gin.Context, key string) (token *string, err error) {
@@ -38,6 +42,28 @@ func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
 			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+		} else {
+			userId := jwtPayload.UserId
+			roleId := jwtPayload.RoleId
+			c.Set("userId", userId)
+			c.Set("roleId", roleId)
+			c.Next()
+		}
+	}
+}
+
+func RequiredAdministratorPermission(db *gorm.DB, secretKey string) gin.HandlerFunc {
+	jwtTokenProvider := jwt.NewJWTProvider(secretKey)
+	return func(c *gin.Context) {
+		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
+			fmt.Println("Error while get Bearer token from header: " + err.Error())
+			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
+		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
+			fmt.Println("Error while validate accessToken: " + err.Error())
+			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+		} else if roleId := jwtPayload.RoleId; int(roleId) != AdministratorPermission {
+			fmt.Println("Error while validate user permission: you don't has right permission to do this.")
+			c.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, ErrPermissionDenied.Error(), ErrPermissionDenied.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId

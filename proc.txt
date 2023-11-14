@@ -12,4 +12,4 @@
 [GET]: /api/v1/qrcodes/668b0527-9567-4b67-89c6-59fdadfab90d ✓ ✅︎
 [GET]: /api/v1/qrcodes/?page=1&limit=2&type=qrCodeType&version=3&errorLevel=2&startTime=12345678&endTime=12345678 ✓ ✅︎
 
-[GET]: /api/v1/users/:userUUID/qrcodes/?page=1&limit=2&type=qrCodeType&version=3&errorLevel=2&startTime=12345678&endTime=12345678 ✓
+[GET]: /api/v1/users/:userUUID/qrcodes/?page=1&limit=2&type=qrCodeType&version=3&errorLevel=2&startTime=12345678&endTime=12345678 ✓ ✅︎

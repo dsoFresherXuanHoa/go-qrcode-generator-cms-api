@@ -7,6 +7,8 @@ import (
 	"go-qrcode-generator-cms-api/src/entity"
 	"io"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -34,7 +36,7 @@ func (oauthUtil) Response2User(res *http.Response) (*entity.UserCreatable, error
 		}{}
 		json.Unmarshal(content, &resUser)
 		defaultRoleId := uint(2)
-		defaultPassword := "nil"
+		defaultPassword := uuid.NewString()
 		usr := entity.UserCreatable{RoleID: &defaultRoleId, FirstName: &resUser.FamilyName, LastName: &resUser.GivenName, Email: &resUser.Email, Password: &defaultPassword, AvatarURL: resUser.Picture}
 		return &usr, nil
 	}

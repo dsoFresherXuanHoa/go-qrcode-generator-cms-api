@@ -51,7 +51,7 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 		return nil, err
 	} else {
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
-		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.Role.ID}
+		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.RoleId}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
 			return nil, err
@@ -88,7 +88,7 @@ func (business *authBusiness) GoogleSignIn(ctx context.Context, user *entity.Use
 		return nil, err
 	} else {
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
-		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.Role.ID}
+		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.RoleId}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
 			return nil, err

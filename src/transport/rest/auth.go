@@ -9,6 +9,7 @@ import (
 	"go-qrcode-generator-cms-api/src/storage"
 	"go-qrcode-generator-cms-api/src/utils"
 	"net/http"
+	"os"
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/gin-gonic/gin"
@@ -263,21 +264,23 @@ func Home(db *gorm.DB) gin.HandlerFunc {
 
 // TODO: Random State to avoid CSRF attack:
 func GoogleSignIn(db *gorm.DB, oauth2 *oauth2.Config) gin.HandlerFunc {
+	state := os.Getenv("GOOGLE_STATE_PARAMS")
 	return func(ctx *gin.Context) {
-		url := oauth2.AuthCodeURL("dsoFresherXuanHoa")
+		url := oauth2.AuthCodeURL(state)
 		ctx.Redirect(http.StatusTemporaryRedirect, url)
 	}
 }
 
 // TODO: Random State to avoid CSRF attack:
 func GoogleSignInCallBack(db *gorm.DB, oauth2cfg *oauth2.Config) gin.HandlerFunc {
+	state := os.Getenv("GOOGLE_STATE_PARAMS")
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
 		authStorage := storage.NewAuthStore(userStorage)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
-		if state := ctx.Request.FormValue("state"); state != "dsoFresherXuanHoa" {
+		if stateURL := ctx.Request.FormValue("state"); stateURL != state {
 			fmt.Println("Error while get state from redirect url in order to authentication identity: state cannot be empty!")
 			ctx.AbortWithStatus(http.StatusBadRequest)
 		} else if token, err := oauth2cfg.Exchange(oauth2.NoContext, ctx.Request.FormValue("code")); err != nil {
