@@ -1,10 +1,11 @@
 @host = http://localhost:3000/api/v1/auth
 @contentType = application/json
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
+@userAccessToken = {{$dotenv ADMIN_ACCESS_TOKEN}}
 
 
 ###
-PATCH {{host}}/activation?activationCode=e980b6ee-feb3-462d-b468-061956a137cf
+PATCH {{host}}/activation?activationCode=c96cf8e1-b77b-415a-8d33-1e5887119cea
 Content-Type: {{contentType}}
 
 ###
@@ -13,7 +14,7 @@ Content-Type: {{contentType}}
 
 {
     "email": "dso.intern.xuanhoa@gmail.com",
-    "password":"dsoFresherXuanHoa"
+    "password":"dsoInternXuanHoa"
 }
 
 ###
@@ -22,13 +23,13 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{userAccessToken}}
 
 ###
-GET {{host}}/reset-password?email=dso.intern.xuanhoa@gmail.com
+GET {{host}}/reset-password/?email=dso.intern.xuanhoa@gmail.com
 Content-Type: {{contentType}}
 
 ###
-PATCH {{host}}/reset-password?resetCode=e980b6ee-feb3-462d-b468-061956a137cf
+PATCH {{host}}/reset-password/?resetCode=c96cf8e1-b77b-415a-8d33-1e5887119cea
 Content-Type: {{contentType}}
 
 {
-    "password": "dsoFresherXuanHoa"
+    "password": "dsoInternXuanHoa"
 }

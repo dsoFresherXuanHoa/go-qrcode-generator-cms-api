@@ -1,4 +1,4 @@
-[POST]: /api/v1/roles/ ✓ ✅︎
+[POST]: /api/v1/roles/ ✓
 
 [POST]: /api/v1/auth/sign-up ✓ ✅︎
 [PATCH]: /api/v1/auth/activation?activationCode=e980b6ee-feb3-462d-b468-061956a137cf ✓ ✅︎

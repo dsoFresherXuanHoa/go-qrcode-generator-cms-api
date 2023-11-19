@@ -65,13 +65,15 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 			fmt.Println("Error while validate user request: " + err.Error())
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, err.Error(), ValidateCreateQRCodeRequestFailure))
 		} else {
-			userId := ctx.Value("userId").(uint)
-			reqQrCode.UserID = userId
-			if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
-				fmt.Println("Error while create QrCode: " + err.Error())
-				ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
-			} else {
-				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": nil}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
+			userId := ctx.Value("userId")
+			if userId != nil {
+				reqQrCode.UserID = userId.(uint)
+				if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
+					fmt.Println("Error while create QrCode: " + err.Error())
+					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
+				} else {
+					ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": nil}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
+				}
 			}
 		}
 	}

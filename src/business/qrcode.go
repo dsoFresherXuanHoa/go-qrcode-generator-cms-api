@@ -37,7 +37,7 @@ var (
 type QRCodeStorage interface {
 	CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
 	FindQRCodeByUUID(ctx context.Context, uuid string) (*entity.QRCodeResponse, error)
-	FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging entity.Paginate) ([]entity.QRCodeResponse, error)
+	FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging *entity.Paginate) ([]entity.QRCodeResponse, error)
 }
 
 type RedisStorage interface {
@@ -56,16 +56,17 @@ func NewQRCodeBusiness(qrCodeStorage QRCodeStorage, redisStorage RedisStorage) *
 }
 
 func (business *qrCodeBusiness) DetectQRCodeType(content string) string {
+	content = strings.ToLower(content)
 	switch {
-	case strings.Contains(content, "http") || strings.Contains(content, "https"):
+	case strings.Contains(content, "http:") || strings.Contains(content, "https"):
 		return constants.QRCodeURLType
-	case strings.Contains(content, "mailto"):
+	case strings.Contains(content, "mailto:"):
 		return constants.QRCodeMailType
-	case strings.Contains(content, "smsto"):
+	case strings.Contains(content, "smsto:"):
 		return constants.QRCodeSMSType
-	case strings.Contains(content, "tel"):
+	case strings.Contains(content, "tel:"):
 		return constants.QRCodeTelType
-	case strings.Contains(content, "wifi"):
+	case strings.Contains(content, "wifi:"):
 		return constants.QRCodeWifiType
 	default:
 		return constants.QRCodeTextType
@@ -117,7 +118,7 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	localFilePath := filepath.Join(currentDir, localStorageBasePath, localFileName)
 
 	qrCode.FilePath = localFilePath
-	qrCode.Type = business.DetectQRCodeType(qrCode.EncodeContent)
+	qrCode.Type = business.DetectQRCodeType(*qrCode.Content)
 
 	qrCodeConfigs := []qrcode.EncodeOption{
 		qrcode.WithEncodingMode(qrcode.EncModeByte),
@@ -150,22 +151,20 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 		writerConfigs = append(writerConfigs, standard.WithBgTransparent())
 	}
 
-	/*
-		if version, err := business.DetectQRCodeVersion(*qrCode.Content, *qrCode.ErrorLevel); err != nil {
-			fmt.Println("Error while detect QR Code version: " + err.Error())
-			return nil, nil, ErrContentTooLarge
-		} else {
-			qrCodeVersion := *version + 1
-			qrCode.Version = &qrCodeVersion
-			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(qrCodeVersion))
-		}
-	*/
+	if version, err := business.DetectQRCodeVersion(*qrCode.Content, *qrCode.ErrorLevel); err != nil {
+		fmt.Println("Error while detect QR Code version: " + err.Error())
+		return nil, nil, ErrContentTooLarge
+	} else {
+		qrCodeVersion := *version + 1
+		qrCode.Version = &qrCodeVersion
+		qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(qrCodeVersion))
+	}
 	if qrCode.Logo != nil {
 		if logoImage, err := business.ResizeLogoWithVersion(*qrCode); err != nil {
 			return nil, nil, err
 		} else {
-			// *qrCode.Version = 5
-			// qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
+			*qrCode.Version = 10
+			qrCodeConfigs = append(qrCodeConfigs, qrcode.WithVersion(*qrCode.Version))
 			writerConfigs = append(writerConfigs, standard.WithLogoImage(logoImage))
 		}
 	} else if qrCode.Halftone != nil {
@@ -248,7 +247,7 @@ func (business *qrCodeBusiness) FindQRCodeByUUID(ctx context.Context, qrCodeUUID
 func (business *qrCodeBusiness) FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging *entity.Paginate) ([]entity.QRCodeResponse, error) {
 
 	paging.Standardized()
-	if qrCodes, err := business.qrCodeStorage.FindQRCodeByCondition(ctx, cond, timeStat, *paging); err != nil {
+	if qrCodes, err := business.qrCodeStorage.FindQRCodeByCondition(ctx, cond, timeStat, paging); err != nil {
 		return nil, err
 	} else {
 		return qrCodes, nil

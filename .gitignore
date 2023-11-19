@@ -34,4 +34,3 @@
 go.work
 
 tmp
-dist/qrcode/*.*

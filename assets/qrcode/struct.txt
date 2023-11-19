@@ -1,0 +1,5 @@
+- </mail> mailto:[email_address]?subject=[subject]&body=[body]
+- </sms> smsto:[tel]:[content]
+- </tel> tel:[tel]
+- </url> [url]
+- </wifi> wifi:s:[uuid];[t:wpa];p:[password];[h:true];;

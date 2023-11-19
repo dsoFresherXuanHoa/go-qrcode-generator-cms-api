@@ -121,5 +121,5 @@ func (qrCode *QRCodeCreatable) Mask() {
 }
 
 func (qrCode QRCode) Convert2Response() QRCodeResponse {
-	return QRCodeResponse{UUID: qrCode.UUID, Content: qrCode.Content, Type: qrCode.Type, Background: qrCode.Background, Foreground: qrCode.Foreground, BorderWidth: qrCode.BorderWidth, CircleShape: qrCode.CircleShape, TransparentBackground: qrCode.TransparentBackground, Version: qrCode.Version, ErrorLevel: qrCode.ErrorLevel, PublicURL: qrCode.PublicURL, EncodeContent: qrCode.EncodeContent}
+	return QRCodeResponse{UUID: qrCode.UUID, Content: qrCode.Content, Type: qrCode.Type, Background: qrCode.Background, Foreground: qrCode.Foreground, BorderWidth: qrCode.BorderWidth, CircleShape: qrCode.CircleShape, TransparentBackground: qrCode.TransparentBackground, Version: qrCode.Version, ErrorLevel: qrCode.ErrorLevel, PublicURL: qrCode.PublicURL}
 }

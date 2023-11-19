@@ -38,10 +38,10 @@ func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
 			fmt.Println("Error while get Bearer token from header: " + err.Error())
-			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
-			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId
@@ -57,13 +57,13 @@ func RequiredAdministratorPermission(db *gorm.DB, secretKey string) gin.HandlerF
 	return func(c *gin.Context) {
 		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
 			fmt.Println("Error while get Bearer token from header: " + err.Error())
-			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrMissingBearerToken.Error()))
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
-			c.JSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
 		} else if roleId := jwtPayload.RoleId; int(roleId) != AdministratorPermission {
 			fmt.Println("Error while validate user permission: you don't has right permission to do this.")
-			c.JSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, ErrPermissionDenied.Error(), ErrPermissionDenied.Error()))
+			c.AbortWithStatusJSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, ErrPermissionDenied.Error(), ErrPermissionDenied.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId
