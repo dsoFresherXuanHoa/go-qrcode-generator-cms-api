@@ -12,8 +12,8 @@ POST {{host}}/sign-in
 Content-Type: {{contentType}}
 
 {
-    "email": "training.dso.xuanhoa@gmail.com",
-    "password":"dsoFresherXuanHoa"
+    "email": "dso.intern.xuanhoa@gmail.com",
+    "password":"dsoInternXuanHoa"
 }
 
 ###

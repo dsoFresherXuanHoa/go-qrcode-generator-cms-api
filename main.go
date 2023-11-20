@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	cors "github.com/rs/cors/wrapper/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -45,7 +46,9 @@ func main() {
 		viewsDir := filepath.Join(currentDir, "./static/views/*")
 
 		router := gin.Default()
+		router.Use(cors.AllowAll())
 		router.LoadHTMLGlob(viewsDir)
+
 		rest.NewRouteConfig(router).Config(db, redisClient, cld, oauth2cfg)
 
 		docs.SwaggerInfo.BasePath = "/api/v1"
