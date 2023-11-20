@@ -10,14 +10,16 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 var (
-	ErrMissingToken       = errors.New("missing token from header")
-	ErrMissingBearerToken = errors.New("missing bearer token from header")
-	ErrInvalidAccessToken = errors.New("invalid access token")
-	ErrPermissionDenied   = errors.New("permission denied")
+	ErrMissingToken           = errors.New("missing token from header")
+	ErrMissingBearerToken     = errors.New("missing bearer token from header")
+	ErrInvalidAccessToken     = errors.New("invalid access token")
+	ErrPermissionDenied       = errors.New("permission denied")
+	ErrPasswordHasBeenChanged = errors.New("your password has been changed")
 
 	AdministratorPermission = 1
 	UserPermission          = 2
@@ -33,7 +35,7 @@ func GetTokenFromHeader(c *gin.Context, key string) (token *string, err error) {
 	}
 }
 
-func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
+func RequiredAuthorized(db *gorm.DB, redisClient *redis.Client, secretKey string) gin.HandlerFunc {
 	jwtTokenProvider := jwt.NewJWTProvider(secretKey)
 	return func(c *gin.Context) {
 		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
@@ -42,6 +44,9 @@ func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
+		} else if _, err := redisClient.Get(c, fmt.Sprint(jwtPayload.UserId)).Result(); err != nil {
+			fmt.Println("Your password has been changed: " + err.Error())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrPasswordHasBeenChanged.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId
@@ -52,7 +57,7 @@ func RequiredAuthorized(db *gorm.DB, secretKey string) gin.HandlerFunc {
 	}
 }
 
-func RequiredAdministratorPermission(db *gorm.DB, secretKey string) gin.HandlerFunc {
+func RequiredAdministratorPermission(db *gorm.DB, redisClient *redis.Client, secretKey string) gin.HandlerFunc {
 	jwtTokenProvider := jwt.NewJWTProvider(secretKey)
 	return func(c *gin.Context) {
 		if authToken, err := GetTokenFromHeader(c, "Authorization"); err != nil {
@@ -64,6 +69,9 @@ func RequiredAdministratorPermission(db *gorm.DB, secretKey string) gin.HandlerF
 		} else if roleId := jwtPayload.RoleId; int(roleId) != AdministratorPermission {
 			fmt.Println("Error while validate user permission: you don't has right permission to do this.")
 			c.AbortWithStatusJSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, ErrPermissionDenied.Error(), ErrPermissionDenied.Error()))
+		} else if _, err := redisClient.Get(c, fmt.Sprint(jwtPayload.UserId)).Result(); err != nil {
+			fmt.Println("Your password has been changed: " + err.Error())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrPasswordHasBeenChanged.Error()))
 		} else {
 			userId := jwtPayload.UserId
 			roleId := jwtPayload.RoleId

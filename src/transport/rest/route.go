@@ -29,10 +29,10 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 			auth.GET("/", Home(db))
 			auth.POST("/sign-up", SignUp(db, cld))
 			auth.PATCH("/activation", Activate(db))
-			auth.POST("/sign-in", SignIn(db))
-			auth.GET("/me", middlewares.RequiredAuthorized(db, secretKey), Me(db))
+			auth.POST("/sign-in", SignIn(db, redisClient))
+			auth.GET("/me", middlewares.RequiredAuthorized(db, redisClient, secretKey), Me(db))
 			auth.GET("/reset-password", RequestResetPassword(db))
-			auth.PATCH("/reset-password", ResetPassword(db))
+			auth.PATCH("/reset-password", ResetPassword(db, redisClient))
 
 			oauth := auth.Group("/oauth")
 			{
@@ -43,19 +43,19 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 
 		roles := v1.Group("/roles")
 		{
-			roles.POST("/", middlewares.RequiredAdministratorPermission(db, secretKey), CreateRole(db))
+			roles.POST("/", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), CreateRole(db))
 		}
 
 		users := v1.Group("/users")
 		{
-			users.GET("/:userUUID/qrcodes/", middlewares.RequiredAdministratorPermission(db, secretKey), FindQRCodeByUserId(db))
+			users.GET("/:userUUID/qrcodes/", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), FindQRCodeByUserId(db))
 		}
 
 		qrcodes := v1.Group("/qrcodes")
 		{
-			qrcodes.POST("/", middlewares.RequiredAuthorized(db, secretKey), CreateQRCode(db, redisClient, cld))
-			qrcodes.GET("/:uuid", middlewares.RequiredAdministratorPermission(db, secretKey), FindQRCodeByUUID(db))
-			qrcodes.GET("/", middlewares.RequiredAdministratorPermission(db, secretKey), FindQRCodeByCondition(db))
+			qrcodes.POST("/", middlewares.RequiredAuthorized(db, redisClient, secretKey), CreateQRCode(db, redisClient, cld))
+			qrcodes.GET("/:uuid", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), FindQRCodeByUUID(db))
+			qrcodes.GET("/", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), FindQRCodeByCondition(db))
 		}
 	}
 }

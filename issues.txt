@@ -1,6 +1,4 @@
-- return 2 response at create role with non token
 - random state in oauth to avoid csrf attack
-- jwt also valid after change password
 - qrcode logo size limit
 - transparent and halftone not working correctly
 - default password and gender when login using oauth2 framework, openid connect

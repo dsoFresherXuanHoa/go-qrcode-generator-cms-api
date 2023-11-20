@@ -19,11 +19,12 @@ var (
 )
 
 type authStorage struct {
-	userStorage *userStorage
+	userStorage  *userStorage
+	redisStorage *redisStorage
 }
 
-func NewAuthStore(userStorage *userStorage) *authStorage {
-	return &authStorage{userStorage: userStorage}
+func NewAuthStore(userStorage *userStorage, redisStorage *redisStorage) *authStorage {
+	return &authStorage{userStorage: userStorage, redisStorage: redisStorage}
 }
 
 func (s *authStorage) SignUp(ctx context.Context, user *entity.UserCreatable) (*string, error) {
@@ -61,12 +62,13 @@ func (s *authStorage) Me(ctx context.Context, userId uint) (*entity.UserResponse
 	}
 }
 
-func (s *authStorage) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
-	if err := s.userStorage.UpdateUserPasswordByActivationCode(ctx, activationCode, user); err != nil {
+func (s *authStorage) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) (*string, error) {
+	if id, err := s.userStorage.UpdateUserPasswordByActivationCode(ctx, activationCode, user); err != nil {
 		fmt.Println("Error while reset user password by activation code: " + err.Error())
-		return ErrResetPassword
+		return nil, ErrResetPassword
+	} else {
+		return id, nil
 	}
-	return nil
 }
 
 // TODO: Do not mask and set activate status in storage
@@ -97,4 +99,20 @@ func (s *authStorage) VerifyEmailHasBeenUsed(ctx context.Context, email string) 
 		return false, ErrEmailHasBeenUsed
 	}
 	return true, nil
+}
+
+func (s *authStorage) GenerateRedisAccessToken(ctx context.Context, key string, accessToken string) error {
+	if err := s.redisStorage.SaveAccessToken(key, accessToken); err != nil {
+		fmt.Println("Error while save accessToken to redis after login: " + err.Error())
+		return err
+	}
+	return nil
+}
+
+func (s *authStorage) RemoveRedisAccessToken(ctx context.Context, key string) error {
+	if err := s.redisStorage.DeleteAccessToken(key); err != nil {
+		fmt.Println("Error while delete accessToken from redis after login: " + err.Error())
+		return err
+	}
+	return nil
 }

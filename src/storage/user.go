@@ -17,6 +17,7 @@ var (
 	ErrFindUserByEmailAndActivationCode         = errors.New("find user by email and activate status failure")
 	ErrCompareUserPassword                      = errors.New("compare user password and hash password failure")
 	ErrFindUserById                             = errors.New("find detail user by id failure")
+	ErrFindUserByActivationCode                 = errors.New("find user by activation code failure")
 	ErrUpdateUserPasswordByActivationCode       = errors.New("update user password by activation code failure")
 	ErrFindUserByEmail                          = errors.New("find user by email failure")
 	ErrFindQRCodeByUserId                       = errors.New("find qr code by userId failure")
@@ -67,12 +68,25 @@ func (s *userStorage) FindDetailUserById(ctx context.Context, id uint) (*entity.
 	return &usr, nil
 }
 
-func (s *userStorage) UpdateUserPasswordByActivationCode(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
-	if err := s.sql.db.Model(&entity.User{}).Where("activation_code = ?", activationCode).Update("password", *user.Password).Error; err != nil {
-		fmt.Println("Error while update user password by activation code into database: " + err.Error())
-		return ErrUpdateUserPasswordByActivationCode
+func (s *userStorage) FindUserByActivationCode(ctx context.Context, activationCode string) (*entity.User, error) {
+	var usr entity.User
+	if err := s.sql.db.Table(usr.TableName()).Where("activation_code = ?", activationCode).First(&usr).Error; err != nil {
+		fmt.Println("Error while find user by activationCode from database: " + err.Error())
+		return nil, ErrFindUserByActivationCode
 	}
-	return nil
+	return &usr, nil
+}
+
+func (s *userStorage) UpdateUserPasswordByActivationCode(ctx context.Context, activationCode string, user *entity.UserUpdatable) (*string, error) {
+	if usr, err := s.FindUserByActivationCode(ctx, activationCode); err != nil {
+		return nil, err
+	} else if err := s.sql.db.Model(&user).Where("activation_code = ?", activationCode).Update("password", *user.Password).Error; err != nil {
+		fmt.Println("Error while update user password by activation code into database: " + err.Error())
+		return nil, ErrUpdateUserPasswordByActivationCode
+	} else {
+		userId := fmt.Sprint(usr.ID)
+		return &userId, nil
+	}
 }
 
 func (s *userStorage) FindUserByEmail(ctx context.Context, email string) (*entity.UserCreatable, error) {

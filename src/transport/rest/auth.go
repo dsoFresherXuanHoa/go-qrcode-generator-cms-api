@@ -13,6 +13,7 @@ import (
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
@@ -67,7 +68,7 @@ func SignUp(db *gorm.DB, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 		cloudinaryStorage := storage.NewCloudinaryStore(cld)
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		authStorage := storage.NewAuthStore(userStorage, nil)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		var reqUser entity.UserCreatable
@@ -108,7 +109,7 @@ func Activate(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		authStorage := storage.NewAuthStore(userStorage, nil)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		if activationCode := ctx.Query("activationCode"); activationCode == "" {
@@ -135,11 +136,12 @@ func Activate(db *gorm.DB) gin.HandlerFunc {
 //	@Failure		400		{object}	entity.standardResponse
 //	@Failure		500		{object}	entity.standardResponse
 //	@Router			/auth/sign-in [post]
-func SignIn(db *gorm.DB) gin.HandlerFunc {
+func SignIn(db *gorm.DB, redisClient *redis.Client) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		redisStorage := storage.NewRedisStore(redisClient)
+		authStorage := storage.NewAuthStore(userStorage, redisStorage)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		var reqUser entity.UserQueryable
@@ -172,7 +174,7 @@ func Me(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		authStorage := storage.NewAuthStore(userStorage, nil)
 		authBusiness := business.NewAuthBusiness(authStorage)
 		userId := ctx.Value("userId")
 		if userId != nil {
@@ -231,11 +233,12 @@ func RequestResetPassword(db *gorm.DB) gin.HandlerFunc {
 //	@Failure		400		{object}	entity.standardResponse
 //	@Failure		500		{object}	entity.standardResponse
 //	@Router			/auth/reset-password [patch]
-func ResetPassword(db *gorm.DB) gin.HandlerFunc {
+func ResetPassword(db *gorm.DB, redisClient *redis.Client) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		redisStorage := storage.NewRedisStore(redisClient)
+		authStorage := storage.NewAuthStore(userStorage, redisStorage)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		var reqUser entity.UserUpdatable
@@ -247,7 +250,7 @@ func ResetPassword(db *gorm.DB) gin.HandlerFunc {
 		} else if resetCode := ctx.Query("resetCode"); resetCode == "" {
 			fmt.Println("Error while get activationCode from user request: missing activation code")
 			ctx.JSON(http.StatusBadRequest, entity.NewStandardResponse(nil, http.StatusBadRequest, constants.StatusBadRequest, ErrMissingActivationCode.Error(), MissingActivationCode))
-		} else if err := authBusiness.ResetPassword(ctx, resetCode, &reqUser); err != nil {
+		} else if _, err := authBusiness.ResetPassword(ctx, resetCode, &reqUser); err != nil {
 			fmt.Println("Error while reset user password: " + err.Error())
 			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), ResetPasswordFailure))
 		} else {
@@ -277,7 +280,7 @@ func GoogleSignInCallBack(db *gorm.DB, oauth2cfg *oauth2.Config) gin.HandlerFunc
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage)
+		authStorage := storage.NewAuthStore(userStorage, nil)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		if stateURL := ctx.Request.FormValue("state"); stateURL != state {

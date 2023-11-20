@@ -2,6 +2,7 @@ package business
 
 import (
 	"context"
+	"fmt"
 	"go-qrcode-generator-cms-api/src/entity"
 	"go-qrcode-generator-cms-api/src/tokens"
 	"go-qrcode-generator-cms-api/src/tokens/jwt"
@@ -14,10 +15,12 @@ type AuthStorage interface {
 	Activate(ctx context.Context, activationCode string) error
 	SignIn(ctx context.Context, user *entity.UserQueryable) (*entity.UserResponse, error)
 	Me(ctx context.Context, userId uint) (*entity.UserResponse, error)
-	ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error
+	ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) (*string, error)
 	GoogleSignUp(ctx context.Context, user *entity.UserCreatable) (*string, error)
 	GoogleSignIn(ctx context.Context, email string) (*entity.UserResponse, error)
 	VerifyEmailHasBeenUsed(ctx context.Context, email string) (bool, error)
+	GenerateRedisAccessToken(ctx context.Context, key string, accessToken string) error
+	RemoveRedisAccessToken(ctx context.Context, key string) error
 }
 
 type authBusiness struct {
@@ -55,6 +58,8 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 		jwtProvider := jwt.NewJWTProvider(secretKey)
 		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
 			return nil, err
+		} else if err := business.authStorage.GenerateRedisAccessToken(ctx, fmt.Sprint(usr.ID), accessToken.Token); err != nil {
+			return nil, err
 		} else {
 			return accessToken, nil
 		}
@@ -69,12 +74,15 @@ func (business *authBusiness) Me(ctx context.Context, userId uint) (*entity.User
 	}
 }
 
-func (business *authBusiness) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) error {
+func (business *authBusiness) ResetPassword(ctx context.Context, activationCode string, user *entity.UserUpdatable) (*string, error) {
 	user.Mask()
-	if err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
-		return err
+	if id, err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
+		return nil, err
+	} else if err := business.authStorage.RemoveRedisAccessToken(ctx, *id); err != nil {
+		return nil, err
+	} else {
+		return id, nil
 	}
-	return nil
 }
 
 func (business *authBusiness) GoogleSignIn(ctx context.Context, user *entity.UserCreatable) (*tokens.Token, error) {

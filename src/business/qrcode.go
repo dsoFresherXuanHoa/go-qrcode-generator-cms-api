@@ -20,7 +20,6 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
-	"github.com/redis/go-redis/v9"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 	"golang.org/x/exp/slices"
@@ -35,15 +34,17 @@ var (
 )
 
 type QRCodeStorage interface {
-	CreateQRCode(ctx context.Context, client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
+	CreateQRCode(ctx context.Context, qrCode *entity.QRCodeCreatable) (*string, error)
 	FindQRCodeByUUID(ctx context.Context, uuid string) (*entity.QRCodeResponse, error)
 	FindQRCodeByCondition(ctx context.Context, cond map[string]interface{}, timeStat map[string]string, paging *entity.Paginate) ([]entity.QRCodeResponse, error)
 }
 
 type RedisStorage interface {
-	GetQRCodeEncodeFromRedis(client *redis.Client, key string) ([]string, error)
+	GetQRCodeEncodeFromRedis(key string) ([]string, error)
 	GetRedisKey(qrCode *entity.QRCodeCreatable) string
-	SaveQRCode(client *redis.Client, qrCode *entity.QRCodeCreatable) (*string, error)
+	SaveQRCode(qrCode *entity.QRCodeCreatable) (*string, error)
+	SaveAccessToken(key string, accessToken string) error
+	DeleteAccessToken(key string) error
 }
 
 type qrCodeBusiness struct {
@@ -184,7 +185,7 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	return qrCodeConfigs, writerConfigs, nil
 }
 
-func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.Client, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) ([]string, []string, error) {
+func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) ([]string, []string, error) {
 	var qrCodesEncode []string
 	var publicUrls []string
 	totalQRCode := len(qrCode.Contents)
@@ -194,14 +195,14 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.
 		qrCodeClone.Content = &qrCode.Contents[i]
 		key := business.redisStorage.GetRedisKey(&qrCodeClone)
 
-		if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(client, key); err != storage.ErrGetQRCodeFromRedis {
+		if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(key); err != storage.ErrGetQRCodeFromRedis {
 			qrCodeEncode := redisResult[0]
 			publicUrl := redisResult[1]
 
 			qrCodeClone.EncodeContent = qrCodeEncode
 			qrCodeClone.PublicURL = publicUrl
 			qrCodeClone.Model = gorm.Model{}
-			if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, &qrCodeClone); err != nil {
+			if _, err := business.qrCodeStorage.CreateQRCode(ctx, &qrCodeClone); err != nil {
 				return nil, nil, err
 			} else {
 				qrCodesEncode = append(qrCodesEncode, qrCodeEncode)
@@ -221,7 +222,7 @@ func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, client *redis.
 			} else {
 				qrCodeClone.PublicURL = uploadResult.URL
 				qrCodeClone.Content = &qrCode.Contents[i]
-				if _, err := business.qrCodeStorage.CreateQRCode(ctx, client, &qrCodeClone); err != nil {
+				if _, err := business.qrCodeStorage.CreateQRCode(ctx, &qrCodeClone); err != nil {
 					return nil, nil, err
 				}
 				qrCodesEncode = append(qrCodesEncode, qrCodeClone.EncodeContent)

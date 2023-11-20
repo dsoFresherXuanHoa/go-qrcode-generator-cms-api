@@ -68,7 +68,7 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 			userId := ctx.Value("userId")
 			if userId != nil {
 				reqQrCode.UserID = userId.(uint)
-				if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, redisClient, cld, &reqQrCode); err != nil {
+				if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, cld, &reqQrCode); err != nil {
 					fmt.Println("Error while create QrCode: " + err.Error())
 					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 				} else {
