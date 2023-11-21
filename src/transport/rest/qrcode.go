@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/gammazero/workerpool"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -50,7 +51,7 @@ var (
 //	@Failure		400		{object}	entity.standardResponse
 //	@Failure		500		{object}	entity.standardResponse
 //	@Router			/qrcodes [post]
-func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
+func CreateQRCode(wp *workerpool.WorkerPool, db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		redisStorage := storage.NewRedisStore(redisClient)
@@ -68,10 +69,11 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 			userId := ctx.Value("userId")
 			if userId != nil {
 				reqQrCode.UserID = userId.(uint)
-				if _, publicURL, err := qrCodeBusiness.CreateQRCode(ctx, cld, &reqQrCode); err != nil {
+				if _, publicURL, err := qrCodeBusiness.CreateQRCode(wp, ctx, cld, &reqQrCode); err != nil {
 					fmt.Println("Error while create QrCode: " + err.Error())
 					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 				} else {
+					wp.StopWait()
 					ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": nil}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
 				}
 			}

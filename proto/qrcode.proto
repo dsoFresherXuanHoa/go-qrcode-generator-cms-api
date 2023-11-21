@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package qrcodes;
+
+option go_package = "./qrcodes";
+
+message CreateQRCodeRequest {
+    string content = 1;
+    string background = 2;
+    string foreground = 3;
+    int32 borderWidth = 4;
+    bool circleShape = 5;
+    bool transparentBackground = 6;
+    int32 errorLevel = 7;
+    int32 userId = 8;
+}
+
+message CreateQRCodeResponse {
+    string encodeContent = 1;
+    string publicURL = 2;
+}
+
+service QRCodeService {
+    rpc GrpcCreateQRCode (CreateQRCodeRequest) returns (CreateQRCodeResponse) {};
+}

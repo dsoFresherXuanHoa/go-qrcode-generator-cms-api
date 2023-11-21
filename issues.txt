@@ -1,6 +1,6 @@
 - random state in oauth to avoid csrf attack
 - qrcode logo size limit
-- transparent and halftone not working correctly
-- default password and gender when login using oauth2 framework, openid connect
 - http status code: internal server error, no content
 - wrong activation code not return error
+- transparent and halftone not working correctly
+- default password and gender when login using oauth2 framework, openid connect

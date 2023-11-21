@@ -3,6 +3,7 @@
 [POST]: /api/v1/auth/sign-up ✓ ✅︎
 [PATCH]: /api/v1/auth/activation?activationCode=e980b6ee-feb3-462d-b468-061956a137cf ✓ ✅︎
 [POST]: /api/v1/auth/sign-in ✓ ✅︎
+[POST]: /api/v1/auth/sign-out
 [GET]: /api/v1/auth/me ✓ ✅︎
 [GET]: /api/v1/auth/reset-password?email=dso.intern.xuanhoa@gmail.com ✓ ✅︎
 [PATCH]: /api/v1/auth/reset-password?resetCode=668b0527-9567-4b67-89c6-59fdadfab90d ✓ ✅︎

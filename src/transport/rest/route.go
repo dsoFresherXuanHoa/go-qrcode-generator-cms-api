@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/gammazero/workerpool"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
@@ -19,7 +20,7 @@ func NewRouteConfig(router *gin.Engine) *routeConfig {
 	return &routeConfig{router: router}
 }
 
-func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary, oauth2cfg *oauth2.Config) {
+func (cfg routeConfig) Config(wp *workerpool.WorkerPool, db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary, oauth2cfg *oauth2.Config) {
 	secretKey := os.Getenv("JWT_ACCESS_SECRET")
 	cfg.router.MaxMultipartMemory = 8 << 20
 	v1 := cfg.router.Group("/api/v1")
@@ -53,7 +54,7 @@ func (cfg routeConfig) Config(db *gorm.DB, redisClient *redis.Client, cld *cloud
 
 		qrcodes := v1.Group("/qrcodes")
 		{
-			qrcodes.POST("/", middlewares.RequiredAuthorized(db, redisClient, secretKey), CreateQRCode(db, redisClient, cld))
+			qrcodes.POST("/", middlewares.RequiredAuthorized(db, redisClient, secretKey), CreateQRCode(wp, db, redisClient, cld))
 			qrcodes.GET("/:uuid", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), FindQRCodeByUUID(db))
 			qrcodes.GET("/", middlewares.RequiredAdministratorPermission(db, redisClient, secretKey), FindQRCodeByCondition(db))
 		}

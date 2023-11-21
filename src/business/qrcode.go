@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go-qrcode-generator-cms-api/proto/gRPC/qrcodes"
 	"go-qrcode-generator-cms-api/src/constants"
 	"go-qrcode-generator-cms-api/src/entity"
 	"go-qrcode-generator-cms-api/src/storage"
@@ -18,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/gammazero/workerpool"
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
 	"github.com/yeqown/go-qrcode/v2"
@@ -31,6 +33,7 @@ var (
 	ErrUnsupportedLogoImageType            = errors.New("resize qrcode logo to compatibility with version failure: unsupported logo image type")
 	ErrContentTooLarge                     = errors.New("detect qrcode version failure: content length too large")
 	ErrQrCodeUUIDFormat                    = errors.New("validate qrcode uuid failure")
+	ErrAsyncCreateQRCode                   = errors.New("create qrcode failure: something went wrong")
 )
 
 type QRCodeStorage interface {
@@ -185,52 +188,60 @@ func (business *qrCodeBusiness) Standardized(qrCode *entity.QRCodeCreatable) ([]
 	return qrCodeConfigs, writerConfigs, nil
 }
 
-func (business *qrCodeBusiness) CreateQRCode(ctx context.Context, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) ([]string, []string, error) {
+func (business *qrCodeBusiness) CreateQRCode(wp *workerpool.WorkerPool, ctx context.Context, cld *cloudinary.Cloudinary, qrCode *entity.QRCodeCreatable) ([]string, []string, error) {
 	var qrCodesEncode []string
 	var publicUrls []string
-	totalQRCode := len(qrCode.Contents)
-	for i := 0; i < totalQRCode; i++ {
-		qrCodeClone := *qrCode
-		qrCodeClone.Mask()
-		qrCodeClone.Content = &qrCode.Contents[i]
-		key := business.redisStorage.GetRedisKey(&qrCodeClone)
+	contents := qrCode.Contents
+	isSuccess := true
+	for _, content := range contents {
+		content := content
+		wp.Submit(func() {
+			qrCodeClone := *qrCode
+			qrCodeClone.Mask()
+			qrCodeClone.Content = &content
+			key := business.redisStorage.GetRedisKey(&qrCodeClone)
 
-		if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(key); err != storage.ErrGetQRCodeFromRedis {
-			qrCodeEncode := redisResult[0]
-			publicUrl := redisResult[1]
+			if redisResult, err := business.redisStorage.GetQRCodeEncodeFromRedis(key); err != storage.ErrGetQRCodeFromRedis {
+				qrCodeEncode := redisResult[0]
+				publicUrl := redisResult[1]
 
-			qrCodeClone.EncodeContent = qrCodeEncode
-			qrCodeClone.PublicURL = publicUrl
-			qrCodeClone.Model = gorm.Model{}
-			if _, err := business.qrCodeStorage.CreateQRCode(ctx, &qrCodeClone); err != nil {
-				return nil, nil, err
-			} else {
-				qrCodesEncode = append(qrCodesEncode, qrCodeEncode)
-				publicUrls = append(publicUrls, publicUrl)
-			}
-		} else if qrCodeConfigs, writerConfigs, err := business.Standardized(&qrCodeClone); err != nil {
-			return nil, nil, err
-		} else if localFilePath, err := utils.NewQrCodeUtil().SaveQRCode2LocalStorage(&qrCodeClone, qrCodeConfigs, writerConfigs); err != nil {
-			return nil, nil, err
-		} else if encode, err := utils.NewImageUtil().Image2Base64(*localFilePath); err != nil {
-			return nil, nil, err
-		} else {
-			qrCodeClone.EncodeContent = *encode
-			cloudinaryStorage := storage.NewCloudinaryStore(cld)
-			if uploadResult, err := cloudinaryStorage.UploadSingleImage(ctx, qrCodeClone.EncodeContent); err != nil {
-				return nil, nil, err
-			} else {
-				qrCodeClone.PublicURL = uploadResult.URL
-				qrCodeClone.Content = &qrCode.Contents[i]
+				qrCodeClone.EncodeContent = qrCodeEncode
+				qrCodeClone.PublicURL = publicUrl
+				qrCodeClone.Model = gorm.Model{}
 				if _, err := business.qrCodeStorage.CreateQRCode(ctx, &qrCodeClone); err != nil {
-					return nil, nil, err
+					isSuccess = false
+				} else {
+					qrCodesEncode = append(qrCodesEncode, qrCodeEncode)
+					publicUrls = append(publicUrls, publicUrl)
 				}
-				qrCodesEncode = append(qrCodesEncode, qrCodeClone.EncodeContent)
-				publicUrls = append(publicUrls, qrCodeClone.PublicURL)
+			} else if qrCodeConfigs, writerConfigs, err := business.Standardized(&qrCodeClone); err != nil {
+				isSuccess = false
+			} else if localFilePath, err := utils.NewQrCodeUtil().SaveQRCode2LocalStorage(&qrCodeClone, qrCodeConfigs, writerConfigs); err != nil {
+				isSuccess = false
+			} else if encode, err := utils.NewImageUtil().Image2Base64(*localFilePath); err != nil {
+				isSuccess = false
+			} else {
+				qrCodeClone.EncodeContent = *encode
+				cloudinaryStorage := storage.NewCloudinaryStore(cld)
+				if uploadResult, err := cloudinaryStorage.UploadSingleImage(ctx, qrCodeClone.EncodeContent); err != nil {
+					isSuccess = false
+				} else {
+					qrCodeClone.PublicURL = uploadResult.URL
+					qrCodeClone.Content = &content
+					if _, err := business.qrCodeStorage.CreateQRCode(ctx, &qrCodeClone); err != nil {
+						isSuccess = false
+					}
+					qrCodesEncode = append(qrCodesEncode, qrCodeClone.EncodeContent)
+					publicUrls = append(publicUrls, qrCodeClone.PublicURL)
+				}
 			}
-		}
+		})
 	}
-	return qrCodesEncode, publicUrls, nil
+	if isSuccess {
+		return qrCodesEncode, publicUrls, nil
+	} else {
+		return nil, nil, ErrAsyncCreateQRCode
+	}
 }
 
 func (business *qrCodeBusiness) FindQRCodeByUUID(ctx context.Context, qrCodeUUID string) (*entity.QRCodeResponse, error) {
@@ -253,4 +264,9 @@ func (business *qrCodeBusiness) FindQRCodeByCondition(ctx context.Context, cond 
 	} else {
 		return qrCodes, nil
 	}
+}
+
+func (business *qrCodeBusiness) GrpcCreateQRCode(ctx context.Context, req *qrcodes.CreateQRCodeRequest) (*qrcodes.CreateQRCodeResponse, error) {
+	fmt.Println("Call GRPC Service.")
+	return new(qrcodes.CreateQRCodeResponse), nil
 }
