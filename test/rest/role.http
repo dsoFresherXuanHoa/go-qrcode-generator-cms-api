@@ -3,8 +3,8 @@
 
 ###
 POST {{host}}/
-Content-Type: {{contentType}}
 
+Content-Type: {{contentType}}
 {
     "name": "Administrator"
 }

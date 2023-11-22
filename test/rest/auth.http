@@ -4,7 +4,7 @@
 @adminAccessToken = {{$dotenv ADMIN_ACCESS_TOKEN}}
 
 ###
-PATCH {{host}}/activation?activationCode=ee20c869-fa8c-43ae-926f-f783fcb1d411
+PATCH {{host}}/activation?activationCode=05e576c0-b447-4b26-a552-f7292d86cb5
 Content-Type: {{contentType}}
 
 ###
@@ -12,23 +12,28 @@ POST {{host}}/sign-in
 Content-Type: {{contentType}}
 
 {
-    "email": "dso.intern.xuanhoa@gmail.com",
+    "email": "training.dso.xuanhoa@gmail.com",
     "password":"dsoInternXuanHoa"
 }
 
 ###
 GET {{host}}/me
 Content-Type: {{contentType}}
-Authorization: Bearer {{userAccessToken}}
+Authorization: Bearer {{adminAccessToken}}
 
 ###
-GET {{host}}/reset-password/?email=dso.intern.xuanhoa@gmail.com
+GET {{host}}/reset-password/?email=training.dso.xuanhoa@gmail.com
 Content-Type: {{contentType}}
 
 ###
-PATCH {{host}}/reset-password/?resetCode=ee20c869-fa8c-43ae-926f-f783fcb1d411
+PATCH {{host}}/reset-password/?resetCode=05e576c0-b447-4b26-a552-f7292d86cb54
 Content-Type: {{contentType}}
 
 {
     "password": "dsoInternXuanHoa"
 }
+
+###
+GET {{host}}/sign-out
+Content-Type: {{contentType}}
+Authorization: Bearer {{userAccessToken}}

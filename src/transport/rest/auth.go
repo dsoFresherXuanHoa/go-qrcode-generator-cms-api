@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/business"
@@ -48,6 +49,8 @@ var (
 	ConvertOAuthResponse2UserFailure      = "Cannot Convert OAuth Response To User: Check Swagger For More Information."
 	SignInUsingGoogleFailure              = "Cannot Sign In Using Google Account: Try Again Later."
 	SignInUsingGoogleSuccess              = "Sign In Using Google Account: Congrats."
+	SignOutFailure                        = "Cannot Sign Out: Try Again Later."
+	SignOutSuccess                        = "Sign Out Success: Congrats."
 	GetUserIdFromTokenFailure             = "Get User Id from Auth Token: Please Use Valid Auth Token"
 )
 
@@ -275,18 +278,19 @@ func GoogleSignIn(db *gorm.DB, oauth2 *oauth2.Config) gin.HandlerFunc {
 }
 
 // TODO: Random State to avoid CSRF attack:
-func GoogleSignInCallBack(db *gorm.DB, oauth2cfg *oauth2.Config) gin.HandlerFunc {
+func GoogleSignInCallBack(db *gorm.DB, redisClient *redis.Client, oauth2cfg *oauth2.Config) gin.HandlerFunc {
 	state := os.Getenv("GOOGLE_STATE_PARAMS")
 	return func(ctx *gin.Context) {
 		sqlStorage := storage.NewSQLStore(db)
 		userStorage := storage.NewUserStore(sqlStorage)
-		authStorage := storage.NewAuthStore(userStorage, nil)
+		redisStorage := storage.NewRedisStore(redisClient)
+		authStorage := storage.NewAuthStore(userStorage, redisStorage)
 		authBusiness := business.NewAuthBusiness(authStorage)
 
 		if stateURL := ctx.Request.FormValue("state"); stateURL != state {
 			fmt.Println("Error while get state from redirect url in order to authentication identity: state cannot be empty!")
 			ctx.AbortWithStatus(http.StatusBadRequest)
-		} else if token, err := oauth2cfg.Exchange(oauth2.NoContext, ctx.Request.FormValue("code")); err != nil {
+		} else if token, err := oauth2cfg.Exchange(context.TODO(), ctx.Request.FormValue("code")); err != nil {
 			fmt.Println("Error while get code from redirect url in order to authentication identity: code cannot be empty!")
 			ctx.AbortWithStatus(http.StatusBadRequest)
 		} else if res, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken); err != nil {
@@ -303,6 +307,21 @@ func GoogleSignInCallBack(db *gorm.DB, oauth2cfg *oauth2.Config) gin.HandlerFunc
 			} else {
 				ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"accessToken": accessToken}, http.StatusOK, constants.StatusOK, "", SignInUsingGoogleSuccess))
 			}
+		}
+	}
+}
+
+func SignOut(redisClient *redis.Client) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		redisStorage := storage.NewRedisStore(redisClient)
+		authStorage := storage.NewAuthStore(nil, redisStorage)
+		authBusiness := business.NewAuthBusiness(authStorage)
+
+		if err := authBusiness.SignOut(ctx); err != nil {
+			fmt.Println("Error while sign out: " + err.Error())
+			ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), SignOutFailure))
+		} else {
+			ctx.JSON(http.StatusOK, entity.NewStandardResponse(true, http.StatusOK, constants.StatusOK, "", SignOutSuccess))
 		}
 	}
 }

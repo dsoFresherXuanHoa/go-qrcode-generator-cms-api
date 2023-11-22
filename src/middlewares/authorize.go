@@ -44,7 +44,7 @@ func RequiredAuthorized(db *gorm.DB, redisClient *redis.Client, secretKey string
 		} else if jwtPayload, err := jwtTokenProvider.Validate(*authToken); err != nil {
 			fmt.Println("Error while validate accessToken: " + err.Error())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrInvalidAccessToken.Error()))
-		} else if _, err := redisClient.Get(c, fmt.Sprint(jwtPayload.UserId)).Result(); err != nil {
+		} else if _, err := redisClient.Get(c, fmt.Sprint("accessTokenOfUser", jwtPayload.UserId)).Result(); err != nil {
 			fmt.Println("Your password has been changed: " + err.Error())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrPasswordHasBeenChanged.Error()))
 		} else {
@@ -69,7 +69,7 @@ func RequiredAdministratorPermission(db *gorm.DB, redisClient *redis.Client, sec
 		} else if roleId := jwtPayload.RoleId; int(roleId) != AdministratorPermission {
 			fmt.Println("Error while validate user permission: you don't has right permission to do this.")
 			c.AbortWithStatusJSON(http.StatusForbidden, entity.NewStandardResponse(nil, http.StatusForbidden, constants.StatusForbidden, ErrPermissionDenied.Error(), ErrPermissionDenied.Error()))
-		} else if _, err := redisClient.Get(c, fmt.Sprint(jwtPayload.UserId)).Result(); err != nil {
+		} else if _, err := redisClient.Get(c, fmt.Sprint("accessTokenOfUser", jwtPayload.UserId)).Result(); err != nil {
 			fmt.Println("Your password has been changed: " + err.Error())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, entity.NewStandardResponse(nil, http.StatusUnauthorized, constants.StatusUnauthorized, err.Error(), ErrPasswordHasBeenChanged.Error()))
 		} else {

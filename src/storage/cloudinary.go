@@ -17,7 +17,7 @@ func NewCloudinaryStore(cld *cloudinary.Cloudinary) *cloudinaryStorage {
 	return &cloudinaryStorage{cld: cld}
 }
 
-// TODO: Limit Image Size
+// TODO: Limit Image Size and Check File Type
 func (s *cloudinaryStorage) UploadSingleImage(ctx context.Context, encode string) (*uploader.UploadResult, error) {
 	storageDir := os.Getenv("CLOUDINARY_STORAGE_DIR")
 	if resp, err := s.cld.Upload.Upload(ctx, encode, uploader.UploadParams{

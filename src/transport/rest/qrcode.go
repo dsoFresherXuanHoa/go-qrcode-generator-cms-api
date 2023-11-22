@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/business"
+	"go-qrcode-generator-cms-api/src/configs"
 	"go-qrcode-generator-cms-api/src/constants"
 	"go-qrcode-generator-cms-api/src/entity"
 	"go-qrcode-generator-cms-api/src/storage"
 	"net/http"
 
 	"github.com/cloudinary/cloudinary-go/v2"
-	"github.com/gammazero/workerpool"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -51,8 +51,9 @@ var (
 //	@Failure		400		{object}	entity.standardResponse
 //	@Failure		500		{object}	entity.standardResponse
 //	@Router			/qrcodes [post]
-func CreateQRCode(wp *workerpool.WorkerPool, db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
+func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudinary) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		wp, _ := configs.NewWorkerPoolClient().Instance()
 		sqlStorage := storage.NewSQLStore(db)
 		redisStorage := storage.NewRedisStore(redisClient)
 		qrCodeStorage := storage.NewQrCodeStore(sqlStorage, redisStorage)

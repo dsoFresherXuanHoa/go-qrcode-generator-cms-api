@@ -7,4 +7,5 @@ var (
 	StatusOK                  = "OK"
 	StatusForbidden           = "Forbidden"
 	StatusNotFound            = "Not Found"
+	StatusTooManyRequests     = "Too Many Requests"
 )

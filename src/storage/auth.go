@@ -37,7 +37,10 @@ func (s *authStorage) SignUp(ctx context.Context, user *entity.UserCreatable) (*
 }
 
 func (s *authStorage) Activate(ctx context.Context, activationCode string) error {
-	if err := s.userStorage.UpdateUserActivateStatusByActivationCode(ctx, activationCode); err != nil {
+	if _, err := s.userStorage.UpdateUserActivateStatusByActivationCode(ctx, activationCode); err == ErrInvalidActivationCode {
+		fmt.Println("Error while activate user by activation code: " + err.Error())
+		return ErrInvalidActivationCode
+	} else if err != nil {
 		fmt.Println("Error while activate user by activation code: " + err.Error())
 		return ErrActivateUserByActivationCode
 	}
@@ -101,7 +104,7 @@ func (s *authStorage) VerifyEmailHasBeenUsed(ctx context.Context, email string) 
 	return true, nil
 }
 
-func (s *authStorage) GenerateRedisAccessToken(ctx context.Context, key string, accessToken string) error {
+func (s *authStorage) GenerateRedisAccessToken(key string, accessToken string) error {
 	if err := s.redisStorage.SaveAccessToken(key, accessToken); err != nil {
 		fmt.Println("Error while save accessToken to redis after login: " + err.Error())
 		return err

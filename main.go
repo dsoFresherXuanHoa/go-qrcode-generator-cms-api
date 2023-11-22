@@ -11,9 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 
-	"github.com/gammazero/workerpool"
 	"github.com/gin-gonic/gin"
 
 	"google.golang.org/grpc"
@@ -44,8 +42,7 @@ func main() {
 	} else {
 		// Restful Service
 		port := os.Getenv("PORT")
-		wpSize, _ := strconv.Atoi(os.Getenv("WORKER_POOL_SIZE"))
-		wp := workerpool.New(wpSize)
+
 		models := []interface{}{
 			&entity.Role{},
 			&entity.User{},
@@ -60,7 +57,7 @@ func main() {
 		router.Use(cors.AllowAll())
 		router.LoadHTMLGlob(viewsDir)
 
-		rest.NewRouteConfig(router).Config(wp, db, redisClient, cld, oauth2cfg)
+		rest.NewRouteConfig(router).Config(db, redisClient, cld, oauth2cfg)
 
 		docs.SwaggerInfo.BasePath = "/api/v1"
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

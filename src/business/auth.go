@@ -8,6 +8,7 @@ import (
 	"go-qrcode-generator-cms-api/src/tokens/jwt"
 	"go-qrcode-generator-cms-api/src/utils"
 	"os"
+	"strconv"
 )
 
 type AuthStorage interface {
@@ -19,7 +20,7 @@ type AuthStorage interface {
 	GoogleSignUp(ctx context.Context, user *entity.UserCreatable) (*string, error)
 	GoogleSignIn(ctx context.Context, email string) (*entity.UserResponse, error)
 	VerifyEmailHasBeenUsed(ctx context.Context, email string) (bool, error)
-	GenerateRedisAccessToken(ctx context.Context, key string, accessToken string) error
+	GenerateRedisAccessToken(key string, accessToken string) error
 	RemoveRedisAccessToken(ctx context.Context, key string) error
 }
 
@@ -56,9 +57,10 @@ func (business *authBusiness) SignIn(ctx context.Context, user *entity.UserQuery
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
 		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.RoleId}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
-		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
+		expireDuration, _ := strconv.Atoi(os.Getenv("JWT_EXP_TIME_IN_MINUTE"))
+		if accessToken, err := jwtProvider.Generate(payload, expireDuration); err != nil {
 			return nil, err
-		} else if err := business.authStorage.GenerateRedisAccessToken(ctx, fmt.Sprint(usr.ID), accessToken.Token); err != nil {
+		} else if err := business.authStorage.GenerateRedisAccessToken(fmt.Sprint("accessTokenOfUser", usr.ID), accessToken.Token); err != nil {
 			return nil, err
 		} else {
 			return accessToken, nil
@@ -78,7 +80,7 @@ func (business *authBusiness) ResetPassword(ctx context.Context, activationCode 
 	user.Mask()
 	if id, err := business.authStorage.ResetPassword(ctx, activationCode, user); err != nil {
 		return nil, err
-	} else if err := business.authStorage.RemoveRedisAccessToken(ctx, *id); err != nil {
+	} else if err := business.authStorage.RemoveRedisAccessToken(ctx, fmt.Sprint("accessTokenOfUser", *id)); err != nil {
 		return nil, err
 	} else {
 		return id, nil
@@ -98,10 +100,22 @@ func (business *authBusiness) GoogleSignIn(ctx context.Context, user *entity.Use
 		secretKey := os.Getenv("JWT_ACCESS_SECRET")
 		payload := tokens.TokenPayload{UserId: usr.ID, RoleId: usr.RoleId}
 		jwtProvider := jwt.NewJWTProvider(secretKey)
-		if accessToken, err := jwtProvider.Generate(payload, 86400); err != nil {
+		expireDuration, _ := strconv.Atoi(os.Getenv("JWT_EXP_TIME_IN_MINUTE"))
+		if accessToken, err := jwtProvider.Generate(payload, expireDuration); err != nil {
+			return nil, err
+		} else if err := business.authStorage.GenerateRedisAccessToken(fmt.Sprint("accessTokenOfUser", usr.ID), accessToken.Token); err != nil {
 			return nil, err
 		} else {
 			return accessToken, nil
 		}
+	}
+}
+
+func (business *authBusiness) SignOut(ctx context.Context) error {
+	userId := ctx.Value("userId")
+	if err := business.authStorage.RemoveRedisAccessToken(ctx, fmt.Sprint("accessTokenOfUser", userId)); err != nil {
+		return err
+	} else {
+		return nil
 	}
 }

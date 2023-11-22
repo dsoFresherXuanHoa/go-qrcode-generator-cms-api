@@ -21,6 +21,7 @@ var (
 	ErrUpdateUserPasswordByActivationCode       = errors.New("update user password by activation code failure")
 	ErrFindUserByEmail                          = errors.New("find user by email failure")
 	ErrFindQRCodeByUserId                       = errors.New("find qr code by userId failure")
+	ErrInvalidActivationCode                    = errors.New("update user password by activation code failure: invalid activationCode")
 )
 
 type userStorage struct {
@@ -39,12 +40,16 @@ func (s *userStorage) CreateUser(ctx context.Context, user *entity.UserCreatable
 	return &user.UUID, nil
 }
 
-func (s *userStorage) UpdateUserActivateStatusByActivationCode(ctx context.Context, activationCode string) error {
-	if err := s.sql.db.Model(&entity.User{}).Where("activation_code = ?", activationCode).Update("activate", true).Error; err != nil {
-		fmt.Println("Error while update user activate status by activation code into database: " + err.Error())
-		return ErrUpdateUserActivateStatusByActivationCode
+func (s *userStorage) UpdateUserActivateStatusByActivationCode(ctx context.Context, activationCode string) (*int64, error) {
+	if result := s.sql.db.Model(&entity.User{}).Where("activation_code = ?", activationCode).Update("activate", true); result.Error != nil {
+		fmt.Println("Error while update user activate status by activation code into database: " + result.Error.Error())
+		return nil, ErrUpdateUserActivateStatusByActivationCode
+	} else if result.RowsAffected == 0 {
+		fmt.Println("Error while update user activate status by activation code into database: invalid activationCode")
+		return nil, ErrInvalidActivationCode
+	} else {
+		return &result.RowsAffected, nil
 	}
-	return nil
 }
 
 func (s *userStorage) FindUserByEmailAndPassword(ctx context.Context, email string, password string) (*entity.UserResponse, error) {

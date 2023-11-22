@@ -32,7 +32,7 @@ func (j *jwtProvider) Generate(payload tokens.TokenPayload, exp int) (*tokens.To
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims{
 		Payload: payload,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Second * time.Duration(exp)).Unix(),
+			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(exp)).Unix(),
 			IssuedAt:  time.Now().Local().Unix(),
 		},
 	})

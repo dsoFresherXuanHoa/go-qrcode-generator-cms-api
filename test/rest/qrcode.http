@@ -1,6 +1,7 @@
 @host = http://localhost:3000/api/v1/qrcodes
 @contentType = application/json
 @userAccessToken = {{$dotenv USER_ACCESS_TOKEN}}
+@adminAccessToken = {{$dotenv ADMIN_ACCESS_TOKEN}}
 
 ###
 POST {{host}}/
@@ -17,11 +18,11 @@ Authorization: Bearer {{userAccessToken}}
 }
 
 ###
-GET {{host}}/7af6d34c-dbe1-4eda-8e43-8d9a148ab9bb
+GET {{host}}/89b20f1a-1b9d-48b3-b69f-4cd94124f8e9
 Content-Type: {{contentType}}
-Authorization: Bearer {{userAccessToken}}
+Authorization: Bearer {{adminAccessToken}}
 
 ###
 GET {{host}}/?page=1&size=5&version=4&errorLevel=3&startTime=1699585240&endTime=1700103640
 Content-Type: {{contentType}}
-Authorization: Bearer {{userAccessToken}}
+Authorization: Bearer {{adminAccessToken}}

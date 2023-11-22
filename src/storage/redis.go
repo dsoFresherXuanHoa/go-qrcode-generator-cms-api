@@ -98,7 +98,7 @@ func (s *redisStorage) SaveQRCode(qrCode *entity.QRCodeCreatable) (*string, erro
 }
 
 func (s *redisStorage) SaveAccessToken(key string, accessToken string) error {
-	expireDuration, _ := strconv.Atoi(os.Getenv("REDIS_EXPIRE_TIME_IN_MINUTE"))
+	expireDuration, _ := strconv.Atoi(os.Getenv("JWT_EXP_TIME_IN_MINUTE"))
 	if _, err := s.redisClient.Set(context.Background(), key, accessToken, time.Minute*time.Duration(expireDuration)).Result(); err != nil {
 		fmt.Println("Error while save accessToken to Redis Server: " + err.Error())
 		return ErrSaveAccessToken2Redis
