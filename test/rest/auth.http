@@ -4,7 +4,7 @@
 @adminAccessToken = {{$dotenv ADMIN_ACCESS_TOKEN}}
 
 ###
-PATCH {{host}}/activation?activationCode=05e576c0-b447-4b26-a552-f7292d86cb5
+PATCH {{host}}/activation?activationCode=4a76aa34-b93f-43c9-9306-126fc1566667
 Content-Type: {{contentType}}
 
 ###
@@ -26,7 +26,7 @@ GET {{host}}/reset-password/?email=training.dso.xuanhoa@gmail.com
 Content-Type: {{contentType}}
 
 ###
-PATCH {{host}}/reset-password/?resetCode=05e576c0-b447-4b26-a552-f7292d86cb54
+PATCH {{host}}/reset-password/?resetCode=4a76aa34-b93f-43c9-9306-126fc1566667
 Content-Type: {{contentType}}
 
 {
@@ -36,4 +36,4 @@ Content-Type: {{contentType}}
 ###
 GET {{host}}/sign-out
 Content-Type: {{contentType}}
-Authorization: Bearer {{userAccessToken}}
+Authorization: Bearer {{adminAccessToken}}

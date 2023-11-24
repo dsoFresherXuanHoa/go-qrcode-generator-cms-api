@@ -8,6 +8,7 @@ import (
 	"go-qrcode-generator-cms-api/src/constants"
 	"go-qrcode-generator-cms-api/src/entity"
 	"go-qrcode-generator-cms-api/src/storage"
+	"go-qrcode-generator-cms-api/src/utils"
 	"net/http"
 
 	"github.com/cloudinary/cloudinary-go/v2"
@@ -27,6 +28,7 @@ var (
 	GetAllQRCodeFailure                = "Cannot Get All QR Code: Make Sure You Has Right Permission And Try Again."
 	ValidateCreateQRCodeRequestFailure = "Invalid Create QRCode Incoming Request: Check Swagger For More Information."
 	QRCodeNotFound                     = "Cannot Get QR Code By UUID: QR Code Not Found."
+	VerifyQrCodeFileSizeFailure        = "Cannot Verify QRCode Logo size: QRCode Logo Too Large."
 
 	CreateQrCodeSuccess         = "Create QR Code Success: Congrats."
 	GetQRCodeByUUIDSuccess      = "Get QR Code By UUID Success: Congrats."
@@ -70,7 +72,10 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 			userId := ctx.Value("userId")
 			if userId != nil {
 				reqQrCode.UserID = userId.(uint)
-				if _, publicURL, err := qrCodeBusiness.CreateQRCode(wp, ctx, cld, &reqQrCode); err != nil {
+				if err := utils.NewQrCodeUtil().VerifyQrCodeLogoSize(reqQrCode.Logo); err != nil {
+					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), VerifyQrCodeFileSizeFailure))
+				} else if _, publicURL, err := qrCodeBusiness.CreateQRCode(wp, ctx, cld, &reqQrCode); err != nil {
+					wp.StopWait()
 					fmt.Println("Error while create QrCode: " + err.Error())
 					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 				} else {

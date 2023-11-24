@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"go-qrcode-generator-cms-api/src/entity"
+	"mime/multipart"
+	"os"
+	"strconv"
 
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
@@ -13,6 +16,7 @@ var (
 	ErrCreateQREncodeOption    = errors.New("create QRCode encode option failure")
 	ErrCreateQRImageOption     = errors.New("create QRCode image option failure")
 	ErrSaveQRCode2LocalStorage = errors.New("save QrCode to local storage failure")
+	ErrQRCodeLogoSizeTooLarge  = errors.New("verify QrCode logo size failure: file size too large")
 )
 
 type qrCodeUtil struct {
@@ -34,4 +38,14 @@ func (qrCodeUtil) SaveQRCode2LocalStorage(qrCode *entity.QRCodeCreatable, qrCode
 		return nil, ErrSaveQRCode2LocalStorage
 	}
 	return &qrCode.FilePath, nil
+}
+
+func (qrCodeUtil) VerifyQrCodeLogoSize(logo *multipart.FileHeader) error {
+	logoSizeInByte := logo.Size
+	maxLogoSizeInByte, _ := strconv.Atoi(os.Getenv("MAX_QRLOGO_SIZE_IN_BYTE"))
+	fmt.Println("QRCode Logo file size in bytes: ", logoSizeInByte)
+	if logoSizeInByte > int64(maxLogoSizeInByte) {
+		return ErrQRCodeLogoSizeTooLarge
+	}
+	return nil
 }
