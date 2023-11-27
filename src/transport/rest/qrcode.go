@@ -72,15 +72,18 @@ func CreateQRCode(db *gorm.DB, redisClient *redis.Client, cld *cloudinary.Cloudi
 			userId := ctx.Value("userId")
 			if userId != nil {
 				reqQrCode.UserID = userId.(uint)
-				if err := utils.NewQrCodeUtil().VerifyQrCodeLogoSize(reqQrCode.Logo); err != nil {
-					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), VerifyQrCodeFileSizeFailure))
-				} else if _, publicURL, err := qrCodeBusiness.CreateQRCode(wp, ctx, cld, &reqQrCode); err != nil {
+				if isLogoExists := reqQrCode.Logo; isLogoExists != nil {
+					if err := utils.NewQrCodeUtil().VerifyQrCodeLogoSize(reqQrCode.Logo); err != nil {
+						ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), VerifyQrCodeFileSizeFailure))
+					}
+				}
+				if qrCodeEncode, publicURL, err := qrCodeBusiness.CreateQRCode(wp, ctx, cld, &reqQrCode); err != nil {
 					wp.StopWait()
 					fmt.Println("Error while create QrCode: " + err.Error())
 					ctx.JSON(http.StatusInternalServerError, entity.NewStandardResponse(nil, http.StatusInternalServerError, constants.StatusInternalServerError, err.Error(), CreateQrCodeFailure))
 				} else {
 					wp.StopWait()
-					ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": nil}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
+					ctx.JSON(http.StatusOK, entity.NewStandardResponse(gin.H{"publicURL": publicURL, "encode": qrCodeEncode}, http.StatusOK, "OK", "", CreateQrCodeSuccess))
 				}
 			}
 		}
