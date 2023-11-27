@@ -6,5 +6,5 @@ POST {{host}}/
 Content-Type: {{contentType}}
 
 {
-    "name": "Payment User"
+    "name": "User"
 }

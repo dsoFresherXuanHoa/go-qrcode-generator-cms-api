@@ -29,8 +29,11 @@ func GetTokenFromHeader(c *gin.Context, key string) (token *string, err error) {
 	if authHeader := c.Request.Header.Get(key); authHeader == "" {
 		fmt.Println("Error while get Token from header: missing token ")
 		return nil, ErrMissingToken
-	} else {
+	} else if strings.Contains(authHeader, "Bearer ") {
 		accessToken := strings.Split(authHeader, " ")[1]
+		return &accessToken, nil
+	} else {
+		accessToken := authHeader
 		return &accessToken, nil
 	}
 }
